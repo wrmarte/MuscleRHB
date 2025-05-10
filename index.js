@@ -5,11 +5,12 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMembers,     // needs SERVER MEMBERS INTENT enabled
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    GatewayIntentBits.MessageContent    // needs MESSAGE CONTENT INTENT enabled
+  ]
 });
+
 
 // ✅ Then define behavior after the client is declared
 
