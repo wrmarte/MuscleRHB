@@ -85,7 +85,7 @@ client.on(Events.InteractionCreate, async interaction => {
   });
 });
 
-client.on('messageCreate', message => {
+client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
   const args = message.content.trim().split(/\s+/);
@@ -97,27 +97,45 @@ client.on('messageCreate', message => {
       return message.reply('🚫 You need the **Announcer** role to use this command.');
     }
 
-    const announcement = args.join(' ');
-    if (!announcement) {
+    const fullMsg = args.join(' ');
+    if (!fullMsg) {
       return message.reply('❗ Please include an announcement message.');
     }
 
+    // Allow optional title|content split
+    const [rawTitle, ...rest] = fullMsg.split('|');
+    const title = rawTitle.trim();
+    const content = rest.length > 0 ? rest.join('|').trim() : null;
+
     const announceEmbed = new EmbedBuilder()
-      .setColor(0xFFA500)
-      .setTitle('📢 Announcement')
-      .setDescription(announcement)
-      .setFooter({ text: `Posted by ${message.author.username}` })
+      .setColor(0xFF5733)
+      .setTitle(`📣 ${title}`)
+      .setDescription(content || '*No additional details provided.*')
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Posted by ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
       .setTimestamp();
 
-    message.channel.send({ embeds: [announceEmbed] });
+    const announceRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel('💬 Join the Conversation')
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
+    );
 
-  } else if (command === '!help') {
+    await message.channel.send({ content: '@everyone', embeds: [announceEmbed], components: [announceRow] });
+    await message.react('📢');
+  }
+
+  else if (command === '!help') {
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
       .setDescription('Here are the available commands:')
       .addFields(
-        { name: '`!announce [message]`', value: 'Post an announcement (requires special role).' },
+        {
+          name: '`!announce [title] | [optional content]`',
+          value: 'Post a rich announcement (requires Announcer role). Example:\n`!announce Update | We’re launching Phase 2 tonight.`'
+        },
         { name: '`!help`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
       )
@@ -125,8 +143,9 @@ client.on('messageCreate', message => {
       .setTimestamp();
 
     message.channel.send({ embeds: [helpEmbed] });
+  }
 
-  } else if (command === '!testwelcome') {
+  else if (command === '!testwelcome') {
     const testMember = {
       user: message.author,
       guild: message.guild
