@@ -94,5 +94,36 @@ client.on('messageCreate', message => {
     message.channel.send({ embeds: [helpEmbed] });
   }
 });
+else if (command === '!testwelcome') {
+  const testMember = {
+    user: message.author,
+    guild: message.guild,
+  };
+
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor(getRandomColor()) // Use the same random color function
+    .setTitle(`💎 **Welcome to the Family, ${testMember.user.username}!** 💎`)
+    .setDescription(`
+      **Yo, ${testMember.user.username}, you've just rolled up to the hottest spot in town!** 😎  
+      We're hyped to have you here in **${testMember.guild.name}**. This joint’s where style meets hustle, and you're right on time. 🍸
+
+      🔑 **First move? Slide over to <#holder-verification> to verify and claim your roles.** No pass, no status — you know how it goes. 💼  
+
+      **Here's your VIP guide:**
+      • Check the rules – Know the game before you play. 📜  
+      • Introduce yourself – Step in, let us know who just arrived. 💬  
+      • Get involved – We’re always making moves. Stay sharp. 🔥
+
+      You’re now part of the crew — **#${testMember.guild.memberCount}** strong. Time to flex, vibe, and leave your mark. 💯
+
+      Welcome to the club, boss. 😏
+    `)
+    .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: `Member #${testMember.guild.memberCount} – Leveling up daily.` })
+    .setTimestamp();
+
+  message.channel.send({ embeds: [welcomeEmbed] });
+}
+
 
 client.login(process.env.DISCORD_TOKEN);
