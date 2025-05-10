@@ -97,12 +97,28 @@ client.on('messageCreate', async message => {
       return message.reply('🚫 You need the **Announcer** role to use this command.');
     }
 
+    const tagIndex = args.findIndex(arg => arg === '--tag');
+    let mentionText = '';
+    if (tagIndex !== -1) {
+      const tagArg = args[tagIndex + 1];
+      if (tagArg === 'everyone') {
+        mentionText = '@everyone';
+      } else {
+        const role = message.guild.roles.cache.find(r => r.name === tagArg);
+        if (role) {
+          mentionText = `<@&${role.id}>`;
+        } else {
+          return message.reply('❌ Could not find the specified role to tag.');
+        }
+      }
+      args.splice(tagIndex, 2); // remove --tag and the role name
+    }
+
     const fullMsg = args.join(' ');
     if (!fullMsg) {
       return message.reply('❗ Please include an announcement message.');
     }
 
-    // Allow optional title|content split
     const [rawTitle, ...rest] = fullMsg.split('|');
     const title = rawTitle.trim();
     const content = rest.length > 0 ? rest.join('|').trim() : null;
@@ -115,14 +131,7 @@ client.on('messageCreate', async message => {
       .setFooter({ text: `Posted by ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
       .setTimestamp();
 
-    const announceRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel('💬 Join the Conversation')
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
-    );
-
-    await message.channel.send({ content: '@everyone', embeds: [announceEmbed], components: [announceRow] });
+    await message.channel.send({ content: mentionText, embeds: [announceEmbed] });
     await message.react('📢');
   }
 
@@ -133,8 +142,8 @@ client.on('messageCreate', async message => {
       .setDescription('Here are the available commands:')
       .addFields(
         {
-          name: '`!announce [title] | [optional content]`',
-          value: 'Post a rich announcement (requires Announcer role). Example:\n`!announce Update | We’re launching Phase 2 tonight.`'
+          name: '`!announce [title] | [optional content] [--tag everyone|RoleName]`',
+          value: 'Post a rich announcement (requires Announcer role). Use `--tag` optionally to notify a role.'
         },
         { name: '`!help`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
@@ -179,4 +188,5 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
 
