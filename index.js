@@ -1,8 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
-client.login(process.env.DISCORD_TOKEN);
 
-
+// ✅ First: declare the client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -11,6 +10,8 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 });
+
+// ✅ Then define behavior after the client is declared
 
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
@@ -36,4 +37,5 @@ client.on('messageCreate', message => {
   }
 });
 
+// ✅ Last: log in
 client.login(process.env.DISCORD_TOKEN);
