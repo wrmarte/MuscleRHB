@@ -10,27 +10,42 @@ const client = new Client({
   ]
 });
 
+// Color themes array
+const colorThemes = [
+  0x00BFFF,  // SkyBlue
+  0xFFA500,  // Orange
+  0x8A2BE2,  // BlueViolet
+  0x00FF7F,  // SpringGreen
+  0xFF69B4,  // HotPink
+  0xFFD700,  // Gold
+  0x228B22,  // ForestGreen
+  0x9932CC,  // DarkOrchid
+  0xFF4500,  // OrangeRed
+  0x800080   // Purple
+];
+
+// Function to get a random color from the colorThemes array
+function getRandomColor() {
+  return colorThemes[Math.floor(Math.random() * colorThemes.length)];
+}
+
+// When the bot is ready
 client.once('ready', () => {
   console.log(`✅ Bot is online as ${client.user.tag}`);
   client.user.setPresence({
-    activities: [{ name: 'community updates', type: ActivityType.Watching }],
+    activities: [{ name: 'the server', type: ActivityType.Watching }],
     status: 'online'
   });
 });
 
-// 🎉 Welcome New Members
+// New member joining
 client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
   if (channel) {
     const welcomeEmbed = new EmbedBuilder()
-      .setColor('#3498DB') // Calming blue tone
-      .setAuthor({ name: 'New Member Joined', iconURL: member.user.displayAvatarURL({ dynamic: true }) })
-      .setTitle(`👋 Welcome to ${member.guild.name}, ${member.user.username}!`)
-      .setDescription(`We're excited to have you here. Please check the rules and introduce yourself. 😊`)
-      .addFields(
-        { name: '🆔 Member ID', value: `${member.user.id}`, inline: true },
-        { name: '📆 Joined At', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>`, inline: true }
-      )
+      .setColor(getRandomColor())  // Use random color from themes
+      .setTitle(`👋 Welcome, ${member.user.username}!`)
+      .setDescription(`We're thrilled to have you in **${member.guild.name}**! 🎉\nSay hi and enjoy your stay.`)
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `You are member #${member.guild.memberCount}` })
       .setTimestamp();
@@ -39,13 +54,14 @@ client.on('guildMemberAdd', member => {
   }
 });
 
-// 📢 Announcement Command
+// Message handling (for commands)
 client.on('messageCreate', message => {
   if (message.author.bot) return;
 
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
 
+  // Announcement Command
   if (command === '!announce') {
     const announcement = args.join(' ');
     if (!announcement) {
@@ -53,24 +69,24 @@ client.on('messageCreate', message => {
     }
 
     const announceEmbed = new EmbedBuilder()
-      .setColor('#E67E22') // Rich orange
-      .setTitle('📢 Official Server Announcement')
-      .setDescription(`> ${announcement}`) // Blockquote style
-      .setFooter({ text: `Posted by ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
+      .setColor(getRandomColor())  // Use random color from themes
+      .setTitle('📢 Announcement')
+      .setDescription(announcement)
+      .setFooter({ text: `Posted by ${message.author.username}` })
       .setTimestamp();
 
     message.channel.send({ embeds: [announceEmbed] });
   }
 
-  // 🆘 Help Command
-  else if (command === '!musclehelp') {
+  // Help Command
+  else if (command === '!help') {
     const helpEmbed = new EmbedBuilder()
-      .setColor('#2ECC71') // Soft green
-      .setTitle('🛠 Command Menu')
-      .setDescription('Here’s what I can do:')
+      .setColor(getRandomColor())  // Use random color from themes
+      .setTitle('🛠 Bot Commands')
+      .setDescription('Here are the available commands:')
       .addFields(
-        { name: '`!announce [message]`', value: 'Post a highlighted announcement to the current channel.' },
-        { name: '`!help`', value: 'Display this command list and usage info.' }
+        { name: '`!announce [message]`', value: 'Make a stylish announcement.' },
+        { name: '`!help`', value: 'Show this help menu.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -80,4 +96,3 @@ client.on('messageCreate', message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
