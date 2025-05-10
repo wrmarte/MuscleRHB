@@ -39,8 +39,8 @@ client.on('guildMemberAdd', member => {
 **You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
+📊 [Pimp Levels](${HOLDER_LEVELS}) \n
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${member.guild.memberCount}**.`)
@@ -106,8 +106,8 @@ client.on('messageCreate', message => {
 **You made it to ${testMember.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
+📊 [Pimp Levels](${HOLDER_LEVELS}) \n
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${testMember.guild.memberCount}**.`)
