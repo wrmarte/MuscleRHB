@@ -13,18 +13,24 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`✅ Bot is online as ${client.user.tag}`);
   client.user.setPresence({
-    activities: [{ name: 'the server', type: ActivityType.Watching }],
+    activities: [{ name: 'community updates', type: ActivityType.Watching }],
     status: 'online'
   });
 });
 
+// 🎉 Welcome New Members
 client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
   if (channel) {
     const welcomeEmbed = new EmbedBuilder()
-      .setColor(0x00BFFF)
-      .setTitle(`👋 Welcome, ${member.user.username}!`)
-      .setDescription(`We're thrilled to have you in **${member.guild.name}**! 🎉\nSay hi and enjoy your stay.`)
+      .setColor('#3498DB') // Calming blue tone
+      .setAuthor({ name: 'New Member Joined', iconURL: member.user.displayAvatarURL({ dynamic: true }) })
+      .setTitle(`👋 Welcome to ${member.guild.name}, ${member.user.username}!`)
+      .setDescription(`We're excited to have you here. Please check the rules and introduce yourself. 😊`)
+      .addFields(
+        { name: '🆔 Member ID', value: `${member.user.id}`, inline: true },
+        { name: '📆 Joined At', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>`, inline: true }
+      )
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `You are member #${member.guild.memberCount}` })
       .setTimestamp();
@@ -33,6 +39,7 @@ client.on('guildMemberAdd', member => {
   }
 });
 
+// 📢 Announcement Command
 client.on('messageCreate', message => {
   if (message.author.bot) return;
 
@@ -46,23 +53,24 @@ client.on('messageCreate', message => {
     }
 
     const announceEmbed = new EmbedBuilder()
-      .setColor(0xFFA500)
-      .setTitle('📢 Announcement')
-      .setDescription(announcement)
-      .setFooter({ text: `Posted by ${message.author.username}` })
+      .setColor('#E67E22') // Rich orange
+      .setTitle('📢 Official Server Announcement')
+      .setDescription(`> ${announcement}`) // Blockquote style
+      .setFooter({ text: `Posted by ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
       .setTimestamp();
 
     message.channel.send({ embeds: [announceEmbed] });
   }
 
-  else if (command === '!help') {
+  // 🆘 Help Command
+  else if (command === '!musclehelp') {
     const helpEmbed = new EmbedBuilder()
-      .setColor(0x00FF7F)
-      .setTitle('🛠 Bot Commands')
-      .setDescription('Here are the available commands:')
+      .setColor('#2ECC71') // Soft green
+      .setTitle('🛠 Command Menu')
+      .setDescription('Here’s what I can do:')
       .addFields(
-        { name: '`!announce [message]`', value: 'Make a stylish announcement.' },
-        { name: '`!help`', value: 'Show this help menu.' }
+        { name: '`!announce [message]`', value: 'Post a highlighted announcement to the current channel.' },
+        { name: '`!help`', value: 'Display this command list and usage info.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -72,3 +80,4 @@ client.on('messageCreate', message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
