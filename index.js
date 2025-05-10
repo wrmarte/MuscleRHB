@@ -1,5 +1,15 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, PermissionsBitField } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActivityType,
+  ButtonBuilder,
+  ActionRowBuilder,
+  ButtonStyle,
+  PermissionsBitField,
+  Events
+} = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -10,9 +20,8 @@ const client = new Client({
   ]
 });
 
-// Set the role name that is allowed to use !announce
+// Configurable
 const ANNOUNCER_ROLE_NAME = 'KINGPINP:feather:';
-
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 
@@ -31,25 +40,49 @@ client.once('ready', () => {
 
 client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
-  if (channel) {
-    const welcomeEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
-      .setDescription(`
+  if (!channel) return;
+
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
+    .setDescription(`
 **You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
-📊 [Pimp Levels](${HOLDER_LEVELS}) \n
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${member.guild.memberCount}**.`)
-      .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${member.guild.memberCount}` })
-      .setTimestamp();
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: `Member #${member.guild.memberCount}` })
+    .setTimestamp();
 
-    channel.send({ embeds: [welcomeEmbed] });
+  const welcomeButton = new ButtonBuilder()
+    .setCustomId(`welcome_${member.id}`)
+    .setLabel('👋 Welcome')
+    .setStyle(ButtonStyle.Success);
+
+  const row = new ActionRowBuilder().addComponents(welcomeButton);
+
+  channel.send({ embeds: [welcomeEmbed], components: [row] });
+});
+
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isButton()) return;
+
+  const [action, memberId] = interaction.customId.split('_');
+  if (action !== 'welcome') return;
+
+  const welcomedMember = await interaction.guild.members.fetch(memberId).catch(() => null);
+  if (!welcomedMember) {
+    return interaction.reply({ content: '❌ Could not find the member.', ephemeral: true });
   }
+
+  await interaction.reply({
+    content: `👑 ${interaction.user} welcomed ${welcomedMember} to the crew! 💯`,
+    allowedMentions: { users: [interaction.user.id, memberId] }
+  });
 });
 
 client.on('messageCreate', message => {
@@ -84,7 +117,7 @@ client.on('messageCreate', message => {
       .setTitle('🛠 Bot Commands')
       .setDescription('Here are the available commands:')
       .addFields(
-        { name: '`!announce [message]`', value: 'Post an announcement (requires Announcer role).' },
+        { name: '`!announce [message]`', value: 'Post an announcement (requires special role).' },
         { name: '`!help`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
       )
@@ -106,8 +139,8 @@ client.on('messageCreate', message => {
 **You made it to ${testMember.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
-📊 [Pimp Levels](${HOLDER_LEVELS}) \n
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${testMember.guild.memberCount}**.`)
@@ -115,7 +148,14 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
       .setFooter({ text: `Member #${testMember.guild.memberCount}` })
       .setTimestamp();
 
-    message.channel.send({ embeds: [welcomeEmbed] });
+    const welcomeButton = new ButtonBuilder()
+      .setCustomId(`welcome_${testMember.user.id}`)
+      .setLabel('👋 Welcome')
+      .setStyle(ButtonStyle.Success);
+
+    const row = new ActionRowBuilder().addComponents(welcomeButton);
+
+    message.channel.send({ embeds: [welcomeEmbed], components: [row] });
   }
 });
 
