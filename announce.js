@@ -23,3 +23,24 @@ module.exports = {
     await interaction.reply({ embeds: [embed] });
   }
 };
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName('announce')
+    .setDescription('Send an announcement')
+    .addStringOption(option =>
+      option.setName('message')
+        .setDescription('The message')
+        .setRequired(true)
+    ),
+
+  async execute(interaction) {
+    const msg = interaction.options.getString('message');
+    const embed = new EmbedBuilder()
+      .setTitle('📢 Announcement')
+      .setDescription(msg)
+      .setColor(0xffa500);
+    await interaction.reply({ embeds: [embed] });
+  }
+};
