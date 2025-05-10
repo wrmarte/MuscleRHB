@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActivityType } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -12,6 +12,10 @@ const client = new Client({
 
 client.once('ready', () => {
   console.log(`✅ Bot is online as ${client.user.tag}`);
+  client.user.setPresence({
+    activities: [{ name: 'the server', type: ActivityType.Watching }],
+    status: 'online'
+  });
 });
 
 client.on('guildMemberAdd', member => {
@@ -20,9 +24,9 @@ client.on('guildMemberAdd', member => {
     const welcomeEmbed = new EmbedBuilder()
       .setColor(0x00BFFF)
       .setTitle(`👋 Welcome, ${member.user.username}!`)
-      .setDescription(`Glad to have you in **${member.guild.name}**!`)
+      .setDescription(`We're thrilled to have you in **${member.guild.name}**! 🎉\nSay hi and enjoy your stay.`)
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${member.guild.memberCount}` })
+      .setFooter({ text: `You are member #${member.guild.memberCount}` })
       .setTimestamp();
 
     channel.send({ embeds: [welcomeEmbed] });
@@ -32,9 +36,11 @@ client.on('guildMemberAdd', member => {
 client.on('messageCreate', message => {
   if (message.author.bot) return;
 
-  if (message.content.startsWith('!announce')) {
-    const announcement = message.content.slice('!announce'.length).trim();
+  const args = message.content.trim().split(/\s+/);
+  const command = args.shift().toLowerCase();
 
+  if (command === '!announce') {
+    const announcement = args.join(' ');
     if (!announcement) {
       return message.reply('❗ Please include an announcement message.');
     }
@@ -47,6 +53,21 @@ client.on('messageCreate', message => {
       .setTimestamp();
 
     message.channel.send({ embeds: [announceEmbed] });
+  }
+
+  else if (command === '!help') {
+    const helpEmbed = new EmbedBuilder()
+      .setColor(0x00FF7F)
+      .setTitle('🛠 Bot Commands')
+      .setDescription('Here are the available commands:')
+      .addFields(
+        { name: '`!announce [message]`', value: 'Make a stylish announcement.' },
+        { name: '`!help`', value: 'Show this help menu.' }
+      )
+      .setFooter({ text: `Requested by ${message.author.username}` })
+      .setTimestamp();
+
+    message.channel.send({ embeds: [helpEmbed] });
   }
 });
 
