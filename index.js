@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, PermissionsBitField } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -9,6 +9,9 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+
+// Set the role name that is allowed to use !announce
+const ANNOUNCER_ROLE_NAME = 'KINGPINP:feather:';
 
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
@@ -31,23 +34,18 @@ client.on('guildMemberAdd', member => {
   if (channel) {
     const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 **Welcome to the Family, ${member.user.username}!** 💎`)
+      .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
       .setDescription(`
-**Yo, ${member.user.username}, you've just rolled up to the hottest spot in town!** 😎  
-We're hyped to have you here in **${member.guild.name}**. This joint’s where style meets hustle, and you're right on time. 🍸
+**You made it to ${member.guild.name}, boss.** 😎  
+Keep it clean, flashy, and classy. 🍸
 
-🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼 \n 
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
 
-**Here's your VIP guide:**
-• See all Pimp levels [PIMP LEVELS](${HOLDER_LEVELS}) :feather:
-• Introduce yourself – Step in, let us know who just arrived. 💬  
-• Get involved – We’re always making moves. Stay sharp. 🔥
-
-You’re now part of the crew — **#${member.guild.memberCount}** strong. Time to flex, vibe, and leave your mark. 💯
-
-Welcome to the club, boss. 😏`)
+Say hi. Make moves. Claim your throne. 💯  
+You’re crew member **#${member.guild.memberCount}**.`)
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${member.guild.memberCount} – Leveling up daily.` })
+      .setFooter({ text: `Member #${member.guild.memberCount}` })
       .setTimestamp();
 
     channel.send({ embeds: [welcomeEmbed] });
@@ -61,6 +59,11 @@ client.on('messageCreate', message => {
   const command = args.shift().toLowerCase();
 
   if (command === '!announce') {
+    const hasRole = message.member.roles.cache.some(role => role.name === ANNOUNCER_ROLE_NAME);
+    if (!hasRole) {
+      return message.reply('🚫 You need the **Announcer** role to use this command.');
+    }
+
     const announcement = args.join(' ');
     if (!announcement) {
       return message.reply('❗ Please include an announcement message.');
@@ -74,20 +77,22 @@ client.on('messageCreate', message => {
       .setTimestamp();
 
     message.channel.send({ embeds: [announceEmbed] });
+
   } else if (command === '!help') {
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
       .setDescription('Here are the available commands:')
       .addFields(
-        { name: '`!announce [message]`', value: 'Make a stylish announcement.' },
+        { name: '`!announce [message]`', value: 'Post an announcement (requires Announcer role).' },
         { name: '`!help`', value: 'Show this help menu.' },
-        { name: '`!testwelcome`', value: 'Simulate the pimp-style welcome message.' }
+        { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
 
     message.channel.send({ embeds: [helpEmbed] });
+
   } else if (command === '!testwelcome') {
     const testMember = {
       user: message.author,
@@ -96,23 +101,18 @@ client.on('messageCreate', message => {
 
     const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 **Welcome to the Family, ${testMember.user.username}!** 💎`)
+      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
       .setDescription(`
-**Yo, ${testMember.user.username}, you've just rolled up to the hottest spot in town!** 😎  
-We're hyped to have you here in **${testMember.guild.name}**. This joint’s where style meets hustle, and you're right on time. 🍸
+**You made it to ${testMember.guild.name}, boss.** 😎  
+Keep it clean, flashy, and classy. 🍸
 
-🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼 \n 
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
 
-**Here's your VIP guide:**
-• • See all Pimp levels [PIMP LEVELS](${HOLDER_LEVELS}) :feather:
-• Introduce yourself – Step in, let us know who just arrived. 💬  
-• Get involved – We’re always making moves. Stay sharp. 🔥
-
-You’re now part of the crew — **#${testMember.guild.memberCount}** strong. Time to flex, vibe, and leave your mark. 💯
-
-Welcome to the club, boss. 😏`)
+Say hi. Make moves. Claim your throne. 💯  
+You’re crew member **#${testMember.guild.memberCount}**.`)
       .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount} – Leveling up daily.` })
+      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
       .setTimestamp();
 
     message.channel.send({ embeds: [welcomeEmbed] });
@@ -120,3 +120,4 @@ Welcome to the club, boss. 😏`)
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
