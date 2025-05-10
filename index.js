@@ -92,9 +92,13 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
 
   if (command === '!announce') {
+    await message.delete().catch(() => {}); // Delete command message
+
     const hasRole = message.member.roles.cache.some(role => role.name === ANNOUNCER_ROLE_NAME);
     if (!hasRole) {
-      return message.reply('🚫 You need the **Announcer** role to use this command.');
+      return message.channel.send('🚫 You need the **Announcer** role to use this command.').then(m => {
+        setTimeout(() => m.delete().catch(() => {}), 5000);
+      });
     }
 
     const tagIndex = args.findIndex(arg => arg === '--tag');
@@ -108,15 +112,19 @@ client.on('messageCreate', async message => {
         if (role) {
           mentionText = `<@&${role.id}>`;
         } else {
-          return message.reply('❌ Could not find the specified role to tag.');
+          return message.channel.send('❌ Could not find the specified role to tag.').then(m => {
+            setTimeout(() => m.delete().catch(() => {}), 5000);
+          });
         }
       }
-      args.splice(tagIndex, 2); // remove --tag and the role name
+      args.splice(tagIndex, 2);
     }
 
     const fullMsg = args.join(' ');
     if (!fullMsg) {
-      return message.reply('❗ Please include an announcement message.');
+      return message.channel.send('❗ Please include an announcement message.').then(m => {
+        setTimeout(() => m.delete().catch(() => {}), 5000);
+      });
     }
 
     const [rawTitle, ...rest] = fullMsg.split('|');
@@ -132,10 +140,11 @@ client.on('messageCreate', async message => {
       .setTimestamp();
 
     await message.channel.send({ content: mentionText, embeds: [announceEmbed] });
-    await message.react('📢');
   }
 
   else if (command === '!help') {
+    await message.delete().catch(() => {}); // Delete command message
+
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
@@ -143,7 +152,7 @@ client.on('messageCreate', async message => {
       .addFields(
         {
           name: '`!announce [title] | [optional content] [--tag everyone|RoleName]`',
-          value: 'Post a rich announcement (requires Announcer role). Use `--tag` optionally to notify a role.'
+          value: 'Post a rich announcement (requires Announcer role).'
         },
         { name: '`!help`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
@@ -151,10 +160,12 @@ client.on('messageCreate', async message => {
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
 
-    message.channel.send({ embeds: [helpEmbed] });
+    await message.channel.send({ embeds: [helpEmbed] });
   }
 
   else if (command === '!testwelcome') {
+    await message.delete().catch(() => {}); // Delete command message
+
     const testMember = {
       user: message.author,
       guild: message.guild
