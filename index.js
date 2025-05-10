@@ -10,7 +10,8 @@ const client = new Client({
   ]
 });
 
-const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1328546498614394881/1370859135741984858';
+const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
+const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
@@ -38,7 +39,7 @@ We're hyped to have you here in **${member.guild.name}**. This joint’s where s
 🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼  
 
 **Here's your VIP guide:**
-• Check the rules – Know the game before you play. 📜  
+• See all Pimp levels [PIMP LEVELS](${HOLDER_LEVELS}) :feather:
 • Introduce yourself – Step in, let us know who just arrived. 💬  
 • Get involved – We’re always making moves. Stay sharp. 🔥
 
