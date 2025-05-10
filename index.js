@@ -21,7 +21,7 @@ const client = new Client({
 });
 
 // Configurable
-const ANNOUNCER_ROLE_NAME = 'KINGPIMP:feather:';
+const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 
