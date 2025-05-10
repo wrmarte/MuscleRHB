@@ -1,38 +1,52 @@
 require('dotenv').config();
-const fs = require('fs');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ]
 });
 
-client.commands = new Collection();
-
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
-}
-
 client.once('ready', () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`✅ Bot is online as ${client.user.tag}`);
 });
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+client.on('guildMemberAdd', member => {
+  const channel = member.guild.systemChannel;
+  if (channel) {
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(0x00BFFF)
+      .setTitle(`👋 Welcome, ${member.user.username}!`)
+      .setDescription(`Glad to have you in **${member.guild.name}**!`)
+      .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${member.guild.memberCount}` })
+      .setTimestamp();
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+    channel.send({ embeds: [welcomeEmbed] });
+  }
+});
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply({ content: '❌ There was an error!', ephemeral: true });
+client.on('messageCreate', message => {
+  if (message.author.bot) return;
+
+  if (message.content.startsWith('!announce')) {
+    const announcement = message.content.slice('!announce'.length).trim();
+
+    if (!announcement) {
+      return message.reply('❗ Please include an announcement message.');
+    }
+
+    const announceEmbed = new EmbedBuilder()
+      .setColor(0xFFA500)
+      .setTitle('📢 Announcement')
+      .setDescription(announcement)
+      .setFooter({ text: `Posted by ${message.author.username}` })
+      .setTimestamp();
+
+    message.channel.send({ embeds: [announceEmbed] });
   }
 });
 
