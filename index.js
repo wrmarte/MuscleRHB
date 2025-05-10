@@ -11,25 +11,25 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
 // Welcome new members
 client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
   if (channel) {
-    channel.send(`Welcome to the server, ${member}! 🎉`);
+    channel.send(`👋 Welcome to the server, ${member.user.tag}!`);
   }
 });
 
-// Simple announcement command
+// Announcement command
 client.on('messageCreate', message => {
   if (message.content.startsWith('!announce')) {
-    const announcement = message.content.slice('!announce'.length).trim();
-    if (announcement.length > 0) {
-      message.channel.send(`📢 Announcement: ${announcement}`);
+    const text = message.content.slice('!announce'.length).trim();
+    if (text.length > 0) {
+      message.channel.send(`📢 Announcement: ${text}`);
     } else {
-      message.channel.send("Please provide an announcement message.");
+      message.channel.send("⚠️ Please provide an announcement message.");
     }
   }
 });
