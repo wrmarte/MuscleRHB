@@ -36,7 +36,7 @@ client.on('guildMemberAdd', member => {
 **Yo, ${member.user.username}, you've just rolled up to the hottest spot in town!** 😎  
 We're hyped to have you here in **${member.guild.name}**. This joint’s where style meets hustle, and you're right on time. 🍸
 
-🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼  
+🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼 \n 
 
 **Here's your VIP guide:**
 • See all Pimp levels [PIMP LEVELS](${HOLDER_LEVELS}) :feather:
@@ -101,10 +101,10 @@ client.on('messageCreate', message => {
 **Yo, ${testMember.user.username}, you've just rolled up to the hottest spot in town!** 😎  
 We're hyped to have you here in **${testMember.guild.name}**. This joint’s where style meets hustle, and you're right on time. 🍸
 
-🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼  
+🔑 **First move? Slide over to [Holder Verification](${HOLDER_VERIFICATION_LINK}) to verify and claim your roles.** No pass, no status — you know how it goes. 💼 \n 
 
 **Here's your VIP guide:**
-• Check the rules – Know the game before you play. 📜  
+• • See all Pimp levels [PIMP LEVELS](${HOLDER_LEVELS}) :feather:
 • Introduce yourself – Step in, let us know who just arrived. 💬  
 • Get involved – We’re always making moves. Stay sharp. 🔥
 
