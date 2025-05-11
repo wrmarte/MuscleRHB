@@ -85,6 +85,26 @@ client.on(Events.InteractionCreate, async interaction => {
   });
 });
 
+// ✅ Role Added Event (outside of messageCreate!)
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+  if (addedRoles.size === 0) return;
+
+  const channel = newMember.guild.systemChannel;
+  if (!channel) return;
+
+  addedRoles.forEach(role => {
+    const roleEmbed = new EmbedBuilder()
+      .setColor(0x3498db)
+      .setTitle(`🎉 Role Added`)
+      .setDescription(`${newMember.user} just got the **${role.name}** role!`)
+      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+      .setTimestamp();
+
+    channel.send({ embeds: [roleEmbed] });
+  });
+});
+
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
@@ -92,7 +112,7 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
 
   if (command === '!announce') {
-    await message.delete().catch(() => {}); // Delete command message
+    await message.delete().catch(() => {});
 
     const hasRole = message.member.roles.cache.some(role => role.name === ANNOUNCER_ROLE_NAME);
     if (!hasRole) {
@@ -119,24 +139,6 @@ client.on('messageCreate', async message => {
       }
       args.splice(tagIndex, 2);
     }
-client.on('guildMemberUpdate', async (oldMember, newMember) => {
-  const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
-  if (addedRoles.size === 0) return; // No new roles added
-
-  const channel = newMember.guild.systemChannel;
-  if (!channel) return;
-
-  addedRoles.forEach(role => {
-    const roleEmbed = new EmbedBuilder()
-      .setColor(0x3498db)
-      .setTitle(`🎉 Role Added`)
-      .setDescription(`${newMember.user} just got the **${role.name}** role!`)
-      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-      .setTimestamp();
-
-    channel.send({ embeds: [roleEmbed] });
-  });
-});
 
     const fullMsg = args.join(' ');
     if (!fullMsg) {
@@ -161,7 +163,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   }
 
   else if (command === '!helpme') {
-    await message.delete().catch(() => {}); // Delete command message
+    await message.delete().catch(() => {});
 
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF7F)
@@ -172,32 +174,32 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
           name: '`!announce [title] | [optional content] [--tag everyone|RoleName]`',
           value: 'Post a rich announcement (requires Announcer role).'
         },
-        { name: '`!help`', value: 'Show this help menu.' },
-        { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
+        { name: '`!helpme`', value: 'Show this help menu.' },
+        { name: '`!testwelcome`', value: 'Simulate the welcome message.' },
         { name: '`!testrole`', value: 'Simulate a role-added notification.' }
-
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
 
     await message.channel.send({ embeds: [helpEmbed] });
   }
-else if (command === '!testrole') {
-  await message.delete().catch(() => {}); // Delete command message
 
-  const fakeRoleName = 'Elite Pimp';
-  const testEmbed = new EmbedBuilder()
-    .setColor(0x3498db)
-    .setTitle(`🎉 Role Added (Test)`)
-    .setDescription(`${message.author} just got the **${fakeRoleName}** role!`)
-    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-    .setTimestamp();
+  else if (command === '!testrole') {
+    await message.delete().catch(() => {});
 
-  message.channel.send({ embeds: [testEmbed] });
-}
+    const fakeRoleName = 'Elite Pimp';
+    const testEmbed = new EmbedBuilder()
+      .setColor(0x3498db)
+      .setTitle(`🎉 Role Added (Test)`)
+      .setDescription(`${message.author} just got the **${fakeRoleName}** role!`)
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setTimestamp();
+
+    message.channel.send({ embeds: [testEmbed] });
+  }
 
   else if (command === '!testwelcome') {
-    await message.delete().catch(() => {}); // Delete command message
+    await message.delete().catch(() => {});
 
     const testMember = {
       user: message.author,
@@ -232,5 +234,4 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
 
