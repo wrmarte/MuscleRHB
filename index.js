@@ -85,7 +85,6 @@ client.on(Events.InteractionCreate, async interaction => {
   });
 });
 
-// ✅ Role Added Event (outside of messageCreate!)
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
   if (addedRoles.size === 0) return;
@@ -95,10 +94,15 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
   addedRoles.forEach(role => {
     const roleEmbed = new EmbedBuilder()
-      .setColor(0x3498db)
-      .setTitle(`🎉 Role Added`)
-      .setDescription(`${newMember.user} just got the **${role.name}** role!`)
+      .setColor(0x9B59B6)
+      .setTitle(`🚨 New Status Unlocked!`)
+      .setDescription(`
+✨ ${newMember.user} leveled up in style.  
+They’ve just been crowned with the **${role.name}** role! 👑
+
+Show some love, crew. This one’s climbing fast. 🏁`)
       .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Role granted: ${role.name}` })
       .setTimestamp();
 
     channel.send({ embeds: [roleEmbed] });
@@ -189,10 +193,15 @@ client.on('messageCreate', async message => {
 
     const fakeRoleName = 'Elite Pimp';
     const testEmbed = new EmbedBuilder()
-      .setColor(0x3498db)
-      .setTitle(`🎉 Role Added (Test)`)
-      .setDescription(`${message.author} just got the **${fakeRoleName}** role!`)
+      .setColor(0x9B59B6)
+      .setTitle(`🚨 Simulated Status Unlock`)
+      .setDescription(`
+🧪 This is a test alert.
+
+✨ ${message.author} just got the **${fakeRoleName}** role in simulation mode.  
+You can expect this style of alert when real roles are assigned! 🎭`)
       .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Simulated role: ${fakeRoleName}` })
       .setTimestamp();
 
     message.channel.send({ embeds: [testEmbed] });
@@ -234,4 +243,3 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
