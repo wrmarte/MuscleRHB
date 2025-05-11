@@ -119,6 +119,24 @@ client.on('messageCreate', async message => {
       }
       args.splice(tagIndex, 2);
     }
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+  if (addedRoles.size === 0) return; // No new roles added
+
+  const channel = newMember.guild.systemChannel;
+  if (!channel) return;
+
+  addedRoles.forEach(role => {
+    const roleEmbed = new EmbedBuilder()
+      .setColor(0x3498db)
+      .setTitle(`🎉 Role Added`)
+      .setDescription(`${newMember.user} just got the **${role.name}** role!`)
+      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+      .setTimestamp();
+
+    channel.send({ embeds: [roleEmbed] });
+  });
+});
 
     const fullMsg = args.join(' ');
     if (!fullMsg) {
@@ -142,7 +160,7 @@ client.on('messageCreate', async message => {
     await message.channel.send({ content: mentionText, embeds: [announceEmbed] });
   }
 
-  else if (command === '!help') {
+  else if (command === '!helpme') {
     await message.delete().catch(() => {}); // Delete command message
 
     const helpEmbed = new EmbedBuilder()
@@ -156,12 +174,27 @@ client.on('messageCreate', async message => {
         },
         { name: '`!help`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' }
+        { name: '`!testrole`', value: 'Simulate a role-added notification.' }
+
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
 
     await message.channel.send({ embeds: [helpEmbed] });
   }
+else if (command === '!testrole') {
+  await message.delete().catch(() => {}); // Delete command message
+
+  const fakeRoleName = 'Elite Pimp';
+  const testEmbed = new EmbedBuilder()
+    .setColor(0x3498db)
+    .setTitle(`🎉 Role Added (Test)`)
+    .setDescription(`${message.author} just got the **${fakeRoleName}** role!`)
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setTimestamp();
+
+  message.channel.send({ embeds: [testEmbed] });
+}
 
   else if (command === '!testwelcome') {
     await message.delete().catch(() => {}); // Delete command message
