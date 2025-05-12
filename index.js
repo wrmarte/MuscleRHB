@@ -17,6 +17,42 @@ const fs = require('fs');
 const path = require('path');
 const { Client: PgClient } = require('pg');
 
+const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+
+const db = new PgClient({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // Required for Railway
+  },
+});
+
+bot.once('ready', async () => {
+  console.log(`✅ Bot is online as ${bot.user.tag}`);
+
+  try {
+    await db.connect();
+    console.log('📦 Connected to PostgreSQL database');
+  } catch (err) {
+    console.error('❌ Failed to connect to PostgreSQL:', err);
+  }
+});
+
+bot.on('messageCreate', async (message) => {
+  if (message.content === '!ping') {
+    message.reply('🏓 Pong!');
+  }
+
+  if (message.content === '!users') {
+    try {
+      const res = await db.query('SELECT * FROM users'); // example table
+      message.reply(`Found ${res.rows.length} users in the DB.`);
+    } catch (err) {
+      console.error('DB query failed:', err);
+      message.reply('Failed to fetch users.');
+    }
+  }
+});
+
 const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
