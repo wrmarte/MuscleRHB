@@ -294,6 +294,14 @@ client.on('messageCreate', async message => {
       if (imageUrl.startsWith('ipfs://')) {
         imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
       }
+// Simple test
+import { Client } from 'pg';
+
+const client = new Client();
+client.connect().then(() => {
+  console.log('Connected to DB');
+  return client.end();
+}).catch(err => console.error('DB connection error:', err));
 
       const nftEmbed = new EmbedBuilder()
         .setColor(getRandomColor())
