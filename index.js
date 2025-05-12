@@ -10,6 +10,7 @@ const {
   PermissionsBitField,
   Events
 } = require('discord.js');
+const fetch = require('node-fetch'); // Ensure you have node-fetch installed
 
 const client = new Client({
   intents: [
@@ -180,12 +181,49 @@ client.on('messageCreate', async message => {
         },
         { name: '`!helpme`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' },
-        { name: '`!testrole`', value: 'Simulate a role-added notification.' }
+        { name: '`!testrole`', value: 'Simulate a role-added notification.' },
+        { name: '`!mypimp`', value: 'Fetch a random CryptoPimp NFT from Zora!' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
 
     await message.channel.send({ embeds: [helpEmbed] });
+  }
+
+  else if (command === '!mypimp') {
+    await message.delete().catch(() => {});
+
+    const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
+    const baseUrl = `https://api.zora.co/collections/base:${contractAddress}/tokens?limit=50`;
+
+    try {
+      const response = await fetch(baseUrl);
+      const data = await response.json();
+
+      const tokens = data.tokens;
+      if (!tokens || tokens.length === 0) {
+        return message.channel.send('❌ Could not find any NFTs in this collection.');
+      }
+
+      const randomToken = tokens[Math.floor(Math.random() * tokens.length)];
+      const imageUrl = randomToken.token.image?.url || 'https://via.placeholder.com/500x500?text=No+Image';
+      const tokenName = randomToken.token.name || `CryptoPimp #${randomToken.token.tokenId}`;
+      const permalink = `https://zora.co/collect/base:${contractAddress}/${randomToken.token.tokenId}`;
+
+      const pimpEmbed = new EmbedBuilder()
+        .setColor(0xFF00FF)
+        .setTitle(`🧃 Your Random CryptoPimp`)
+        .setDescription(`[${tokenName}](${permalink}) struts the blockchain runway. 🔥`)
+        .setImage(imageUrl)
+        .setFooter({ text: `Token ID: ${randomToken.token.tokenId}` })
+        .setTimestamp();
+
+      message.channel.send({ embeds: [pimpEmbed] });
+
+    } catch (error) {
+      console.error('Error fetching NFT:', error);
+      message.channel.send('⚠️ Failed to fetch your CryptoPimp. Try again later.');
+    }
   }
 
   else if (command === '!testrole') {
@@ -194,52 +232,14 @@ client.on('messageCreate', async message => {
     const fakeRoleName = 'Elite Pimp';
     const testEmbed = new EmbedBuilder()
       .setColor(0x9B59B6)
-      .setTitle(`🚨 Simulated Status Unlock`)
-      .setDescription(`
-🧪 This is a test alert.
-
-✨ ${message.author} just got the **${fakeRoleName}** role in simulation mode.  
-You can expect this style of alert when real roles are assigned! 🎭`)
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Simulated role: ${fakeRoleName}` })
+      .setTitle(`Role: ${fakeRoleName}`)
+      .setDescription('You have been assigned an **Elite Pimp** status. Show off your exclusive abilities!')
       .setTimestamp();
 
     message.channel.send({ embeds: [testEmbed] });
   }
 
-  else if (command === '!testwelcome') {
-    await message.delete().catch(() => {});
-
-    const testMember = {
-      user: message.author,
-      guild: message.guild
-    };
-
-    const welcomeEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
-      .setDescription(`
-**You made it to ${testMember.guild.name}, boss.** 😎  
-Keep it clean, flashy, and classy. 🍸
-
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})
-
-Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${testMember.guild.memberCount}**.`)
-      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
-      .setTimestamp();
-
-    const welcomeButton = new ButtonBuilder()
-      .setCustomId(`welcome_${testMember.user.id}`)
-      .setLabel('👋 Welcome')
-      .setStyle(ButtonStyle.Success);
-
-    const row = new ActionRowBuilder().addComponents(welcomeButton);
-
-    message.channel.send({ embeds: [welcomeEmbed], components: [row] });
-  }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.BOT_TOKEN);
+
