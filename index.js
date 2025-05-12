@@ -23,6 +23,43 @@ const client = new Client({
 });
 
 // Configurable
+// walletLinker.js
+const { Client } = require('pg');
+
+const db = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+db.connect();
+
+// Ensure the table exists
+db.query(`
+  CREATE TABLE IF NOT EXISTS wallet_links (
+    user_id TEXT PRIMARY KEY,
+    wallet_address TEXT NOT NULL
+  )
+`);
+
+async function linkWallet(userId, walletAddress) {
+  await db.query(
+    `INSERT INTO wallet_links (user_id, wallet_address)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE SET wallet_address = EXCLUDED.wallet_address`,
+    [userId, walletAddress]
+  );
+}
+
+async function getWallet(userId) {
+  const res = await db.query(
+    `SELECT wallet_address FROM wallet_links WHERE user_id = $1`,
+    [userId]
+  );
+  return res.rows[0]?.wallet_address || null;
+}
+
+module.exports = { linkWallet, getWallet };
+
 const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
@@ -313,6 +350,28 @@ if (!userWallet) {
     if (imageUrl.startsWith('ipfs://')) {
       imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
+const { linkWallet, getWallet } = require('./walletLinker');
+
+// Example: !linkwallet 0xABC...
+else if (command === '!linkwallet') {
+  const walletAddress = args[0];
+  if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+    return message.reply('❌ Invalid wallet address.');
+  }
+
+  await linkWallet(message.author.id, walletAddress);
+  message.reply(`✅ Linked your wallet: \`${walletAddress}\``);
+}
+
+// Example: !mywallet
+else if (command === '!mywallet') {
+  const wallet = await getWallet(message.author.id);
+  if (wallet) {
+    message.reply(`🪙 Your wallet: \`${wallet}\``);
+  } else {
+    message.reply('⚠️ You have not linked a wallet yet. Use `!linkwallet <address>`');
+  }
+}
 
     const nftEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
