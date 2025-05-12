@@ -295,7 +295,8 @@ client.on('messageCreate', async message => {
         imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
       }
 // Simple test
-import { Client } from 'pg';
+const { Client } = require('pg');
+
 
 const client = new Client();
 client.connect().then(() => {
