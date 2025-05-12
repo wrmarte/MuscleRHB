@@ -27,6 +27,23 @@ const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 
+const fs = require('fs');
+const path = require('path');
+const WALLET_FILE = path.join(__dirname, 'wallets.json');
+
+function loadWallets() {
+  try {
+    return JSON.parse(fs.readFileSync(WALLET_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveWallets(wallets) {
+  fs.writeFileSync(WALLET_FILE, JSON.stringify(wallets, null, 2));
+}
+
+
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
   return colors[Math.floor(Math.random() * colors.length)];
@@ -113,6 +130,22 @@ Show some love, crew. This one’s climbing fast. 🏁`)
 
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
+  
+  else if (command === '!setwallet') {
+  const address = args[0];
+  await message.delete().catch(() => {});
+
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return message.channel.send('❌ Invalid wallet address format. Please provide a valid address.');
+  }
+
+  const wallets = loadWallets();
+  wallets[message.author.id] = address;
+  saveWallets(wallets);
+
+  message.channel.send(`✅ Wallet address \`${address}\` has been linked to ${message.author}.`);
+}
+
 
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
@@ -246,7 +279,14 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 else if (command === '!mypimp') {
   await message.delete().catch(() => {});
 
-  const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927'; // CryptoPimps contract
+const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
+const wallets = loadWallets();
+const userWallet = wallets[message.author.id];
+
+if (!userWallet) {
+  return message.channel.send(`🚫 You haven't set a wallet. Use \`!setwallet 0x...\` to link yours.`);
+}
+
 
   const options = {
     method: 'GET',
@@ -257,8 +297,9 @@ else if (command === '!mypimp') {
   };
 
   try {
-    const res = await fetch(`https://deep-index.moralis.io/api/v2.2/nft/${contractAddress}?chain=base&format=decimal`, options);
-    const data = await res.json();
+   const res = await fetch(`https://deep-index.moralis.io/api/v2.2/${userWallet}/nft/${contractAddress}?chain=base&format=decimal`, options);
+
+  const data = await res.json();
 
     if (!data.result || data.result.length === 0) {
       return message.channel.send('❌ No NFTs found in the collection.');
