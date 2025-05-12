@@ -286,7 +286,7 @@ else if (command === '!mypimp') {
     console.error('Failed to fetch NFT:', error);
     message.channel.send('🚫 Something went wrong while fetching a pimp.');
   }
-
+}
 
 }
 
