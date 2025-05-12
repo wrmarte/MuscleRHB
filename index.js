@@ -1,6 +1,7 @@
 require('dotenv').config();
+
 const {
-  Client,
+  Client: DiscordClient,
   GatewayIntentBits,
   EmbedBuilder,
   ActivityType,
@@ -12,28 +13,24 @@ const {
 } = require('discord.js');
 
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
+const { Client: PgClient } = require('pg');
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
+const ANNOUNCER_ROLE_NAME = 'ann';
+const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
+const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 
-// Configurable
-// walletLinker.js
-const { Client } = require('pg');
+const WALLET_FILE = path.join(__dirname, 'wallets.json');
 
-const db = new Client({
+// --- PostgreSQL Wallet Storage ---
+const db = new PgClient({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
 db.connect();
 
-// Ensure the table exists
 db.query(`
   CREATE TABLE IF NOT EXISTS wallet_links (
     user_id TEXT PRIMARY KEY,
@@ -58,16 +55,7 @@ async function getWallet(userId) {
   return res.rows[0]?.wallet_address || null;
 }
 
-module.exports = { linkWallet, getWallet };
-
-const ANNOUNCER_ROLE_NAME = 'ann';
-const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
-const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
-
-const fs = require('fs');
-const path = require('path');
-const WALLET_FILE = path.join(__dirname, 'wallets.json');
-
+// --- File-based fallback wallet storage ---
 function loadWallets() {
   try {
     return JSON.parse(fs.readFileSync(WALLET_FILE, 'utf8'));
@@ -80,11 +68,20 @@ function saveWallets(wallets) {
   fs.writeFileSync(WALLET_FILE, JSON.stringify(wallets, null, 2));
 }
 
-
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
   return colors[Math.floor(Math.random() * colors.length)];
 }
+
+// --- Discord Client ---
+const client = new DiscordClient({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
 
 client.once('ready', () => {
   console.log(`✅ Bot is online as ${client.user.tag}`);
@@ -167,22 +164,6 @@ Show some love, crew. This one’s climbing fast. 🏁`)
 
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
-  
-  else if (command === '!setwallet') {
-  const address = args[0];
-  await message.delete().catch(() => {});
-
-  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    return message.channel.send('❌ Invalid wallet address format. Please provide a valid address.');
-  }
-
-  const wallets = loadWallets();
-  wallets[message.author.id] = address;
-  saveWallets(wallets);
-
-  message.channel.send(`✅ Wallet address \`${address}\` has been linked to ${message.author}.`);
-}
-
 
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
@@ -240,7 +221,6 @@ client.on('messageCreate', async message => {
 
   else if (command === '!helpme') {
     await message.delete().catch(() => {});
-
     const helpEmbed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
@@ -252,7 +232,10 @@ client.on('messageCreate', async message => {
         },
         { name: '`!helpme`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' },
-        { name: '`!testrole`', value: 'Simulate a role-added notification.' }
+        { name: '`!testrole`', value: 'Simulate a role-added notification.' },
+        { name: '`!mypimp`', value: 'Display a random CryptoPimp NFT from your wallet.' },
+        { name: '`!linkwallet 0x...`', value: 'Link your wallet to your Discord account.' },
+        { name: '`!mywallet`', value: 'Show your linked wallet.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -260,9 +243,75 @@ client.on('messageCreate', async message => {
     await message.channel.send({ embeds: [helpEmbed] });
   }
 
+  else if (command === '!linkwallet') {
+    const walletAddress = args[0];
+    if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      return message.reply('❌ Invalid wallet address.');
+    }
+
+    await linkWallet(message.author.id, walletAddress);
+    message.reply(`✅ Linked your wallet: \`${walletAddress}\``);
+  }
+
+  else if (command === '!mywallet') {
+    const wallet = await getWallet(message.author.id);
+    if (wallet) {
+      message.reply(`🪙 Your wallet: \`${wallet}\``);
+    } else {
+      message.reply('⚠️ You have not linked a wallet yet. Use `!linkwallet <address>`');
+    }
+  }
+
+  else if (command === '!mypimp') {
+    await message.delete().catch(() => {});
+    const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
+    const userWallet = await getWallet(message.author.id);
+
+    if (!userWallet) {
+      return message.channel.send(`🚫 You haven't set a wallet. Use \`!linkwallet 0x...\` to link yours.`);
+    }
+
+    const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'X-API-Key': process.env.MORALIS_API_KEY
+      }
+    };
+
+    try {
+      const res = await fetch(`https://deep-index.moralis.io/api/v2.2/${userWallet}/nft/${contractAddress}?chain=base&format=decimal`, options);
+      const data = await res.json();
+
+      if (!data.result || data.result.length === 0) {
+        return message.channel.send('❌ No NFTs found in the collection.');
+      }
+
+      const randomNFT = data.result[Math.floor(Math.random() * data.result.length)];
+      const metadata = JSON.parse(randomNFT.metadata || '{}');
+
+      let imageUrl = metadata.image || 'https://via.placeholder.com/300x300?text=No+Image';
+      if (imageUrl.startsWith('ipfs://')) {
+        imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+      }
+
+      const nftEmbed = new EmbedBuilder()
+        .setColor(getRandomColor())
+        .setTitle(`${metadata.name || 'CryptoPimp'} #${randomNFT.token_id}`)
+        .setDescription(`Here's a random NFT from the streets of **CryptoPimps**.`)
+        .setImage(imageUrl)
+        .setFooter({ text: `Token ID: ${randomNFT.token_id}` })
+        .setTimestamp();
+
+      await message.channel.send({ embeds: [nftEmbed] });
+    } catch (error) {
+      console.error('Failed to fetch NFT:', error);
+      message.channel.send('🚫 Something went wrong while fetching a pimp.');
+    }
+  }
+
   else if (command === '!testrole') {
     await message.delete().catch(() => {});
-
     const fakeRoleName = 'Elite Pimp';
     const testEmbed = new EmbedBuilder()
       .setColor(0x9B59B6)
@@ -282,29 +331,24 @@ You can expect this style of alert when real roles are assigned! 🎭`)
   else if (command === '!testwelcome') {
     await message.delete().catch(() => {});
 
-    const testMember = {
-      user: message.author,
-      guild: message.guild
-    };
-
     const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
+      .setTitle(`💎 Welcome, ${message.author.username}! 💎`)
       .setDescription(`
-**You made it to ${testMember.guild.name}, boss.** 😎  
+**You made it to ${message.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${testMember.guild.memberCount}**.`)
-      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
+You’re crew member **#${message.guild.memberCount}**.`)
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${message.guild.memberCount}` })
       .setTimestamp();
 
     const welcomeButton = new ButtonBuilder()
-      .setCustomId(`welcome_${testMember.user.id}`)
+      .setCustomId(`welcome_${message.author.id}`)
       .setLabel('👋 Welcome')
       .setStyle(ButtonStyle.Success);
 
@@ -312,83 +356,6 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 
     message.channel.send({ embeds: [welcomeEmbed], components: [row] });
   }
-
-else if (command === '!mypimp') {
-  await message.delete().catch(() => {});
-
-const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
-const wallets = loadWallets();
-const userWallet = wallets[message.author.id];
-
-if (!userWallet) {
-  return message.channel.send(`🚫 You haven't set a wallet. Use \`!setwallet 0x...\` to link yours.`);
-}
-
-
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      'X-API-Key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Ijg1YzNhODUwLTRlNWItNGM3OC1hYmFhLWE5OTY4NjI5Njg2NCIsIm9yZ0lkIjoiNDQ2Njc0IiwidXNlcklkIjoiNDU5NTcwIiwidHlwZUlkIjoiYjIyYWM1NTYtY2RlMi00OGM3LWIyNjktZTJhMTJlMjdmN2NmIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDcwNjU2NTksImV4cCI6NDkwMjgyNTY1OX0.aTTj3xR5IqOy_J3e-eUfhp2YPNcDBz-nzvL5xARNbbA'
-    }
-  };
-
-  try {
-   const res = await fetch(`https://deep-index.moralis.io/api/v2.2/${userWallet}/nft/${contractAddress}?chain=base&format=decimal`, options);
-
-  const data = await res.json();
-
-    if (!data.result || data.result.length === 0) {
-      return message.channel.send('❌ No NFTs found in the collection.');
-    }
-
-    const randomNFT = data.result[Math.floor(Math.random() * data.result.length)];
-    const metadata = JSON.parse(randomNFT.metadata || '{}');
-
-    // Handle IPFS or fallback
-    let imageUrl = metadata.image || 'https://via.placeholder.com/300x300?text=No+Image';
-    if (imageUrl.startsWith('ipfs://')) {
-      imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-const { linkWallet, getWallet } = require('./walletLinker');
-
-// Example: !linkwallet 0xABC...
-else if (command === '!linkwallet') {
-  const walletAddress = args[0];
-  if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
-    return message.reply('❌ Invalid wallet address.');
-  }
-
-  await linkWallet(message.author.id, walletAddress);
-  message.reply(`✅ Linked your wallet: \`${walletAddress}\``);
-}
-
-// Example: !mywallet
-else if (command === '!mywallet') {
-  const wallet = await getWallet(message.author.id);
-  if (wallet) {
-    message.reply(`🪙 Your wallet: \`${wallet}\``);
-  } else {
-    message.reply('⚠️ You have not linked a wallet yet. Use `!linkwallet <address>`');
-  }
-}
-
-    const nftEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`${metadata.name || 'CryptoPimp'} #${randomNFT.token_id}`)
-      .setDescription(`Here's a random NFT from the streets of **CryptoPimps**.`)
-      .setImage(imageUrl)
-      .setFooter({ text: `Token ID: ${randomNFT.token_id}` })
-      .setTimestamp();
-
-    await message.channel.send({ embeds: [nftEmbed] });
-  } catch (error) {
-    console.error('Failed to fetch NFT:', error);
-    message.channel.send('🚫 Something went wrong while fetching a pimp.');
-  }
-}
-
 });
-
 
 client.login(process.env.DISCORD_TOKEN);
