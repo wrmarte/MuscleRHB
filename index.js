@@ -288,7 +288,7 @@ else if (command === '!mypimp') {
   }
 }
 
-}
+});
 
 
 client.login(process.env.DISCORD_TOKEN);
