@@ -240,6 +240,47 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
 
     message.channel.send({ embeds: [welcomeEmbed], components: [row] });
   }
+
+    else if (command === '!mypimp') {
+    await message.delete().catch(() => {});
+    
+    const walletAddress = message.author.id; // Ideally you'd map Discord users to wallet addresses
+    const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927'; // Your CryptoPimps contract
+
+    const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'X-API-Key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Ijg1YzNhODUwLTRlNWItNGM3OC1hYmFhLWE5OTY4NjI5Njg2NCIsIm9yZ0lkIjoiNDQ2Njc0IiwidXNlcklkIjoiNDU5NTcwIiwidHlwZUlkIjoiYjIyYWM1NTYtY2RlMi00OGM3LWIyNjktZTJhMTJlMjdmN2NmIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDcwNjU2NTksImV4cCI6NDkwMjgyNTY1OX0.aTTj3xR5IqOy_J3e-eUfhp2YPNcDBz-nzvL5xARNbbA'
+      }
+    };
+
+    try {
+      const res = await fetch(`https://deep-index.moralis.io/api/v2.2/nft/${contractAddress}?chain=base&format=decimal`, options);
+      const data = await res.json();
+
+      if (!data.result || data.result.length === 0) {
+        return message.channel.send('❌ No NFTs found in the collection.');
+      }
+
+      const randomNFT = data.result[Math.floor(Math.random() * data.result.length)];
+      const metadata = JSON.parse(randomNFT.metadata || '{}');
+
+      const nftEmbed = new EmbedBuilder()
+        .setColor(getRandomColor())
+        .setTitle(metadata.name || 'Random CryptoPimp')
+        .setDescription(`Here's a random NFT from the streets of **CryptoPimps**.`)
+        .setImage(metadata.image || 'https://via.placeholder.com/300x300?text=No+Image')
+        .setFooter({ text: `Token ID: ${randomNFT.token_id}` })
+        .setTimestamp();
+
+      await message.channel.send({ embeds: [nftEmbed] });
+    } catch (error) {
+      console.error('Failed to fetch NFT:', error);
+      message.channel.send('🚫 Something went wrong while fetching a pimp.');
+    }
+  }
+
 });
 
 client.login(process.env.DISCORD_TOKEN);
