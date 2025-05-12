@@ -10,7 +10,7 @@ const {
   PermissionsBitField,
   Events
 } = require('discord.js');
-const fetch = require('node-fetch'); // Ensure you have node-fetch installed
+const fetch = require('node-fetch');
 
 const client = new Client({
   intents: [
@@ -21,10 +21,12 @@ const client = new Client({
   ]
 });
 
-// Configurable
 const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
+const CONTRACT_ADDRESS = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
+const RESERVOIR_API_BASE = 'https://api.reservoir.tools'; // for mainnet
+const CHAIN = 'base';
 
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
@@ -182,7 +184,7 @@ client.on('messageCreate', async message => {
         { name: '`!helpme`', value: 'Show this help menu.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' },
         { name: '`!testrole`', value: 'Simulate a role-added notification.' },
-        { name: '`!mypimp`', value: 'Fetch a random CryptoPimp NFT from Zora!' }
+        { name: '`!mypimp`', value: 'Fetch a random CryptoPimp NFT from Reservoir!' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -193,29 +195,35 @@ client.on('messageCreate', async message => {
   else if (command === '!mypimp') {
     await message.delete().catch(() => {});
 
-    const contractAddress = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
-    const baseUrl = `https://api.zora.co/collections/base:${contractAddress}/tokens?limit=50`;
+    const url = `${RESERVOIR_API_BASE}/tokens/v6?collection=${CONTRACT_ADDRESS}&limit=50&chain=${CHAIN}`;
 
     try {
-      const response = await fetch(baseUrl);
-      const data = await response.json();
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.RESERVOIR_API_KEY
+        }
+      });
 
+      const data = await response.json();
       const tokens = data.tokens;
+
       if (!tokens || tokens.length === 0) {
         return message.channel.send('❌ Could not find any NFTs in this collection.');
       }
 
-      const randomToken = tokens[Math.floor(Math.random() * tokens.length)];
-      const imageUrl = randomToken.token.image?.url || 'https://via.placeholder.com/500x500?text=No+Image';
-      const tokenName = randomToken.token.name || `CryptoPimp #${randomToken.token.tokenId}`;
-      const permalink = `https://zora.co/collect/base:${contractAddress}/${randomToken.token.tokenId}`;
+      const randomToken = tokens[Math.floor(Math.random() * tokens.length)].token;
+      const imageUrl = randomToken.image || 'https://via.placeholder.com/500x500?text=No+Image';
+      const tokenName = randomToken.name || `CryptoPimp #${randomToken.tokenId}`;
+      const tokenId = randomToken.tokenId;
+      const permalink = `https://base.reservoir.tools/collections/${CONTRACT_ADDRESS}/tokens/${tokenId}`;
 
       const pimpEmbed = new EmbedBuilder()
         .setColor(0xFF00FF)
         .setTitle(`🧃 Your Random CryptoPimp`)
         .setDescription(`[${tokenName}](${permalink}) struts the blockchain runway. 🔥`)
         .setImage(imageUrl)
-        .setFooter({ text: `Token ID: ${randomToken.token.tokenId}` })
+        .setFooter({ text: `Token ID: ${tokenId}` })
         .setTimestamp();
 
       message.channel.send({ embeds: [pimpEmbed] });
@@ -242,4 +250,5 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.BOT_TOKEN);
+
 
