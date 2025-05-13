@@ -117,7 +117,7 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const path = require('path');
 
@@ -130,7 +130,6 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Parse --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -140,14 +139,12 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // Parse --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Title | Description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -158,40 +155,44 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // Try embedding image as an attachment
   if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
-      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
-      const fileName = `announce${ext}`;
-
       const response = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
-        headers: { 'User-Agent': 'DiscordBot (https://discord.com, 1.0)' }
+        headers: { 'User-Agent': 'Mozilla/5.0' }
       });
 
-      const buffer = Buffer.from(response.data, 'binary');
+      const contentType = response.headers['content-type'] || '';
+      const extFromType = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+      }[contentType.split(';')[0]] || '.jpg';
+
+      const fileName = `image${extFromType}`;
+      const buffer = Buffer.from(response.data);
       const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
-      return await message.channel.send({
+      return message.channel.send({
         content: mention ? `📣 **${mention}**` : '',
         embeds: [embed],
         files: [attachment]
       });
     } catch (err) {
-      console.error('❌ Image download failed:', err.message);
-      return message.channel.send('⚠️ Image upload failed. Try a different URL or remove --img.');
+      console.error('❌ Image fetch error:', err.message);
+      return message.channel.send('⚠️ Could not fetch or attach image. Try a different URL.');
     }
   }
 
-  // Send without image
-  await message.channel.send({
+  // No image fallback
+  return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
-
 
 
   else if (command === '!announcew') {
