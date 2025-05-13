@@ -18,6 +18,7 @@ const db = new PgClient({
   ssl: { rejectUnauthorized: false }
 });
 db.connect();
+
 db.query(`
   CREATE TABLE IF NOT EXISTS wallet_links (
     user_id TEXT PRIMARY KEY,
@@ -25,7 +26,6 @@ db.query(`
   )
 `);
 
-// --- Utility Functions ---
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
   return colors[Math.floor(Math.random() * colors.length)];
@@ -44,7 +44,6 @@ async function getWallet(userId) {
   return res.rows[0]?.wallet_address || null;
 }
 
-// --- Bot Setup ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -59,7 +58,6 @@ const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/13165816666424648
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 const CONTRACT_ADDRESS = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
 
-// --- Ready ---
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   client.user.setPresence({
@@ -68,7 +66,6 @@ client.once('ready', () => {
   });
 });
 
-// --- Welcome ---
 client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
   if (!channel) return;
@@ -78,10 +75,7 @@ client.on('guildMemberAdd', member => {
     .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
     .setDescription(`**You made it to ${member.guild.name}, boss.** 😎  
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})
-
-Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${member.guild.memberCount}**.`)
+📊 [Pimp Levels](${HOLDER_LEVELS})`)
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
     .setFooter({ text: `Member #${member.guild.memberCount}` })
     .setTimestamp();
@@ -108,56 +102,62 @@ client.on(Events.InteractionCreate, async interaction => {
   });
 });
 
-// --- Role Update ---
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
-  if (addedRoles.size === 0) return;
+  if (!addedRoles.size) return;
 
   const channel = newMember.guild.systemChannel;
   if (!channel) return;
 
-  addedRoles.forEach(role => {
-    const embed = new EmbedBuilder()
-      .setColor(0x9B59B6)
-      .setTitle('🚨 New Status Unlocked!')
-      .setDescription(`✨ ${newMember.user} leveled up with the **${role.name}** role! 👑`)
-      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Role granted: ${role.name}` })
+  for (const role of addedRoles.values()) {
+   const welcomeEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
+      .setDescription(`
+**You made it to ${testMember.guild.name}, boss.** 😎  
+Keep it clean, flashy, and classy. 🍸
+
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
+📊 [Pimp Levels](${HOLDER_LEVELS}) \n
+
+Say hi. Make moves. Claim your throne. 💯  
+You’re crew member **#${testMember.guild.memberCount}**.`)
+      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
       .setTimestamp();
-    channel.send({ embeds: [embed] });
-  });
+
+    message.channel.send({ embeds: [welcomeEmbed] });
+  }
+
 });
 
-// --- Commands ---
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
+
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
 
-  // --- Announce ---
+  const autoDelete = () => message.delete().catch(() => {});
+
   if (command === '!announce') {
-    await message.delete().catch(() => {});
-    const hasRole = message.member.roles.cache.some(role => role.name === ANNOUNCER_ROLE_NAME);
+    autoDelete();
+    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
     if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
     const tagIndex = args.indexOf('--tag');
     let mention = '';
     if (tagIndex !== -1 && args[tagIndex + 1]) {
-      const tagArg = args[tagIndex + 1];
-      if (tagArg === 'everyone') mention = '@everyone';
-      else {
-        const role = message.guild.roles.cache.find(r => r.name === tagArg);
-        if (!role) return message.channel.send('❌ Role not found.');
-        mention = `<@&${role.id}>`;
-      }
+      const role = message.guild.roles.cache.find(r => r.name === args[tagIndex + 1]);
+      if (!role && args[tagIndex + 1] !== 'everyone') return message.channel.send('❌ Role not found.');
+      mention = args[tagIndex + 1] === 'everyone' ? '@everyone' : `<@&${role.id}>`;
       args.splice(tagIndex, 2);
     }
 
-    const [title, ...desc] = args.join(' ').split('|');
+    const [title, ...rest] = args.join(' ').split('|');
     const embed = new EmbedBuilder()
       .setColor(0xFF5733)
       .setTitle(`📣 ${title.trim()}`)
-      .setDescription(desc.join('|').trim() || '*No content provided.*')
+      .setDescription(rest.join('|').trim() || '*No details provided.*')
       .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `Posted by ${message.author.username}` })
       .setTimestamp();
@@ -165,9 +165,8 @@ client.on('messageCreate', async message => {
     message.channel.send({ content: mention, embeds: [embed] });
   }
 
-  // --- Wallet Commands ---
   else if (command === '!linkwallet') {
-    await message.delete().catch(() => {});
+    autoDelete();
     const address = args[0];
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return message.reply('❌ Invalid wallet address.');
     await linkWallet(message.author.id, address);
@@ -175,14 +174,13 @@ client.on('messageCreate', async message => {
   }
 
   else if (command === '!mywallet') {
-    await message.delete().catch(() => {});
+    autoDelete();
     const wallet = await getWallet(message.author.id);
     message.reply(wallet ? `🪙 Your wallet: \`${wallet}\`` : '⚠️ No wallet linked.');
   }
 
-  // --- NFT Commands ---
-  else if (command === '!somepimp' || command === '!mypimp') {
-    await message.delete().catch(() => {});
+  else if (['!somepimp', '!mypimp'].includes(command)) {
+    autoDelete();
     const wallet = command === '!mypimp' ? await getWallet(message.author.id) : null;
     if (command === '!mypimp' && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
@@ -210,10 +208,11 @@ client.on('messageCreate', async message => {
         : '*No traits available.*';
 
       const rank = meta.rank ? ` | Rank: ${meta.rank}` : '';
+      const link = `https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id}`;
       const embed = new EmbedBuilder()
         .setColor(getRandomColor())
-        .setTitle(`[${meta.name || 'CryptoPimp'} #${nft.token_id}](https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id})`)
-        .setDescription(`🖼️ Click the title to view this NFT on OpenSea.\n${command === '!mypimp' ? 'From your wallet.' : 'Random from contract.'}`)
+        .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
+        .setDescription(`🖼️ [View this NFT on OpenSea](${link})\nHere's a ${command === '!mypimp' ? 'pimp from your wallet' : 'random pimp from the streets'}.`)
         .setImage(img)
         .addFields({ name: '🧬 Traits', value: traits })
         .setFooter({ text: `Token ID: ${nft.token_id}${rank}` })
@@ -226,9 +225,8 @@ client.on('messageCreate', async message => {
     }
   }
 
-  // --- Simulated Welcome ---
   else if (command === '!testwelcome') {
-    await message.delete().catch(() => {});
+    autoDelete();
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
       .setTitle(`💎 Welcome, ${message.author.username}! 💎`)
@@ -247,9 +245,8 @@ client.on('messageCreate', async message => {
     message.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
   }
 
-  // --- Simulated Role ---
   else if (command === '!testrole') {
-    await message.delete().catch(() => {});
+    autoDelete();
     const embed = new EmbedBuilder()
       .setColor(0x9B59B6)
       .setTitle('🚨 Simulated Status Unlock')
@@ -260,21 +257,19 @@ client.on('messageCreate', async message => {
     message.channel.send({ embeds: [embed] });
   }
 
-  // --- Help ---
   else if (command === '!helpme') {
-    await message.delete().catch(() => {});
+    autoDelete();
     const embed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
       .addFields(
-        { name: '`!announce`', value: 'Post an announcement (Announcer role required).' },
+        { name: '`!announce`', value: 'Send a formatted announcement (with optional tag).' },
         { name: '`!somepimp`', value: 'Show a random CryptoPimp NFT.' },
-        { name: '`!mypimp`', value: 'Show an NFT from your wallet.' },
-        { name: '`!linkwallet 0x...`', value: 'Link your wallet address.' },
-        { name: '`!mywallet`', value: 'View your wallet address.' },
+        { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
+        { name: '`!linkwallet <address>`', value: 'Link your wallet to your Discord account.' },
+        { name: '`!mywallet`', value: 'Check your linked wallet address.' },
         { name: '`!testwelcome`', value: 'Simulate a welcome message.' },
-        { name: '`!testrole`', value: 'Simulate a role upgrade.' },
-        { name: '`!helpme`', value: 'Display this help menu.' }
+        { name: '`!testrole`', value: 'Simulate a role unlock notification.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -284,3 +279,4 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
