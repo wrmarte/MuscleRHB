@@ -153,30 +153,37 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // If valid image URL, download and attach it
+  // Try to attach image
   if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
-      const axiosRes = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const fileExt = path.extname(imageUrl.split('?')[0]) || '.jpg';
-      const fileName = `announcement-image${fileExt}`;
-      const buffer = Buffer.from(axiosRes.data, 'binary');
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
+      const fileName = `announce-image${ext}`;
+      const buffer = Buffer.from(response.data);
       const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
-      return message.channel.send({
+      await message.channel.send({
         content: mention ? `📣 **${mention}**` : '',
         embeds: [embed],
         files: [attachment]
       });
+
+      return;
     } catch (err) {
-      console.error('❌ Failed to fetch image:', err.message);
-      await message.channel.send('⚠️ Failed to fetch image. Posting without it.');
+      console.error('⚠️ Attachment image fetch failed, falling back to URL:', err.message);
+      // Fallback: try setting image directly
+      try {
+        embed.setImage(imageUrl); // some URLs allow hotlinking
+      } catch (e2) {
+        console.error('❌ Even fallback image URL failed:', e2.message);
+      }
     }
   }
 
-  // Fallback: no image
-  return message.channel.send({
+  // Final fallback
+  await message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
