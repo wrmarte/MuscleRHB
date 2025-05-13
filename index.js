@@ -148,6 +148,7 @@ client.on('messageCreate', async message => {
 
 if (command === '!announce') {
   autoDelete();
+
   const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
   if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
@@ -169,20 +170,26 @@ if (command === '!announce') {
   }
 
   const [title, ...rest] = args.join(' ').split('|');
-  const content = `${mention ? `📢 **${mention}**\n\n` : ''}${rest.join('|').trim() || '*No details provided.*'}`;
+  const description = rest.join('|').trim() || '*No additional details provided.*';
 
   const embed = new EmbedBuilder()
-    .setColor(0xFF5733)
-    .setTitle(`📣 ${title.trim()}`)
-    .setDescription(content)
+    .setColor(0xF1C40F) // Gold tone
+    .setTitle(`📢 ${title.trim()}`)
+    .setDescription(`**${description}**`)
     .setTimestamp();
 
+  // If image URL is valid, set it
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
     embed.setImage(imageUrl);
   }
 
-  message.channel.send({ content: mention ? `📢 **${mention}**` : '', embeds: [embed] });
+  // Send message
+  message.channel.send({
+    content: mention ? `📣 **${mention}**` : '',
+    embeds: [embed]
+  });
 }
+
 
 
   else if (command === '!linkwallet') {
