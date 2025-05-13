@@ -371,8 +371,8 @@ You’re crew member **#${message.guild.memberCount}**.`)
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
       .addFields(
-        { name: '`!announce`', value: 'Send a formatted announcement (with optional tag).' },
-        { name: '`!announcew`', value: 'Send a test image announcement.' },
+        { name: '`!announce`', value: 'test | tag or --img link' },
+        { name: '`!announcew`', value: 'test | tag ad/or -- link' },
         { name: '`!somepimp`', value: 'Show a random CryptoPimp NFT.' },
         { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
         { name: '`!linkwallet <address>`', value: 'Link your wallet to your Discord account.' },
