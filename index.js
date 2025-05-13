@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 
 const {
@@ -16,7 +17,6 @@ const axios = require('axios');
 const path = require('path');
 const { Client: PgClient } = require('pg');
 
-// --- PostgreSQL Setup ---
 const db = new PgClient({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -74,10 +74,10 @@ client.on('guildMemberAdd', member => {
   const channel = member.guild.systemChannel;
   if (!channel) return;
 
-    const welcomeEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
-      .setDescription(`
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
+    .setDescription(`
 **You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
@@ -86,9 +86,9 @@ Keep it clean, flashy, and classy. 🍸
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${member.guild.memberCount}**.`)
-      .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${member.guild.memberCount}` })
-      .setTimestamp();
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: `Member #${member.guild.memberCount}` })
+    .setTimestamp();
 
   const button = new ButtonBuilder()
     .setCustomId(`welcome_${member.id}`)
@@ -96,7 +96,6 @@ You’re crew member **#${member.guild.memberCount}**.`)
     .setStyle(ButtonStyle.Success);
 
   channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
-
 });
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -121,25 +120,24 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   if (!channel) return;
 
   for (const role of addedRoles.values()) {
-  const welcomeEmbed = new EmbedBuilder()
-    .setColor(getRandomColor())
-    .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
-    .setDescription(`
-**You made it to ${member.guild.name}, boss.** 😎  
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`💎 Welcome, ${newMember.user.username}! 💎`)
+      .setDescription(`
+**You made it to ${newMember.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${member.guild.memberCount}**.`)
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-    .setFooter({ text: `Member #${member.guild.memberCount}` })
-    .setTimestamp();
+You’re crew member **#${newMember.guild.memberCount}**.`)
+      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${newMember.guild.memberCount}` })
+      .setTimestamp();
 
     channel.send({ embeds: [welcomeEmbed] });
   }
-
 });
 
 client.on('messageCreate', async message => {
@@ -172,44 +170,35 @@ client.on('messageCreate', async message => {
       .setFooter({ text: `Posted by ${message.author.username}` })
       .setTimestamp();
 
-    message.channel.send({ content: mention, embeds: [embed] });
+    return message.channel.send({ content: mention, embeds: [embed] });
   }
 
+  else if (command === '!announcew') {
+    autoDelete();
+    const imageUrl = 'https://i.imgur.com/OzZUnfT.jpg';
 
-const axios = require('axios');
-const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const fileName = 'image.jpg';
+      const imageBuffer = Buffer.from(response.data);
+      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
 
-if (command === '!announcew') {
-  autoDelete();
-  let imageUrl = 'https://i.imgur.com/OzZUnfT.jpg'; // known working test image
+      const embed = new EmbedBuilder()
+        .setTitle('📢 Test Announcement')
+        .setDescription('Image should show below')
+        .setImage(`attachment://${fileName}`)
+        .setTimestamp();
 
-  try {
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    const fileName = 'image.jpg';
-    const imageBuffer = Buffer.from(response.data);
-    const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
-
-    const embed = new EmbedBuilder()
-      .setTitle('📢 Test Announcement')
-      .setDescription('Image should show below')
-      .setImage(`attachment://${fileName}`)
-      .setTimestamp();
-
-    return message.channel.send({
-      content: `📣 **@everyone**`,
-      embeds: [embed],
-      files: [attachment]
-    });
-
-  } catch (err) {
-    console.error('Failed to fetch image:', err.message);
-    return message.channel.send('⚠️ Could not fetch the image.');
+      return message.channel.send({
+        content: `📣 **@everyone**`,
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (err) {
+      console.error('Failed to fetch image:', err.message);
+      return message.channel.send('⚠️ Could not fetch the image.');
+    }
   }
-}
-
-
-
-
 
   else if (command === '!linkwallet') {
     const address = args[0];
@@ -219,7 +208,7 @@ if (command === '!announcew') {
   }
 
   else if (command === '!mywallet') {
-   const wallet = await getWallet(message.author.id);
+    const wallet = await getWallet(message.author.id);
     message.reply(wallet ? `🪙 Your wallet: \`${wallet}\`` : '⚠️ No wallet linked.');
   }
 
@@ -247,11 +236,12 @@ if (command === '!announcew') {
       if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
 
       const traits = Array.isArray(meta.attributes)
-        ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}${t.rarity_score ? ` (Rarity: ${t.rarity_score})` : ''}`).join('\n')
+        ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
         : '*No traits available.*';
 
       const rank = meta.rank ? ` | Rank: ${meta.rank}` : '';
       const link = `https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id}`;
+
       const embed = new EmbedBuilder()
         .setColor(getRandomColor())
         .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
@@ -268,13 +258,12 @@ if (command === '!announcew') {
     }
   }
 
-  // Test Welcome
-else if (command === '!testwelcome') {
-   autoDelete();
-  const welcomeEmbed = new EmbedBuilder()
-    .setColor(getRandomColor())
-    .setTitle(`💎 Welcome, ${message.member.user.username}! 💎`)
-    .setDescription(`
+  else if (command === '!testwelcome') {
+    autoDelete();
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`💎 Welcome, ${message.member.user.username}! 💎`)
+      .setDescription(`
 **You made it to ${message.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
@@ -283,18 +272,17 @@ Keep it clean, flashy, and classy. 🍸
 
 Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${message.guild.memberCount}**.`)
-    .setThumbnail(message.member.user.displayAvatarURL({ dynamic: true }))
-    .setFooter({ text: `Member #${message.guild.memberCount}` })
-    .setTimestamp();
+      .setThumbnail(message.member.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${message.guild.memberCount}` })
+      .setTimestamp();
 
-  const button = new ButtonBuilder()
-    .setCustomId(`welcome_${message.author.id}`)
-    .setLabel('👋 Welcome')
-    .setStyle(ButtonStyle.Success);
+    const button = new ButtonBuilder()
+      .setCustomId(`welcome_${message.author.id}`)
+      .setLabel('👋 Welcome')
+      .setStyle(ButtonStyle.Success);
 
-  message.channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
-}
-
+    message.channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
+  }
 
   else if (command === '!testrole') {
     autoDelete();
@@ -305,6 +293,7 @@ You’re crew member **#${message.guild.memberCount}**.`)
       .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: 'Simulated role: Elite Pimp' })
       .setTimestamp();
+
     message.channel.send({ embeds: [embed] });
   }
 
@@ -315,6 +304,7 @@ You’re crew member **#${message.guild.memberCount}**.`)
       .setTitle('🛠 Bot Commands')
       .addFields(
         { name: '`!announce`', value: 'Send a formatted announcement (with optional tag).' },
+        { name: '`!announcew`', value: 'Send a test image announcement.' },
         { name: '`!somepimp`', value: 'Show a random CryptoPimp NFT.' },
         { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
         { name: '`!linkwallet <address>`', value: 'Link your wallet to your Discord account.' },
@@ -330,4 +320,3 @@ You’re crew member **#${message.guild.memberCount}**.`)
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
