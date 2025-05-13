@@ -214,7 +214,6 @@ if (command === '!announce') {
 }
 const axios = require('axios');
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const path = require('path');
 
 if (command === '!announce') {
   let imageUrl = 'https://i.imgur.com/OzZUnfT.jpg'; // known working test image
