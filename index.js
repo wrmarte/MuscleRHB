@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const {
   Client,
   GatewayIntentBits,
@@ -14,7 +15,6 @@ const fetch = require('node-fetch');
 const axios = require('axios');
 const path = require('path');
 const { Client: PgClient } = require('pg');
-
 
 // --- PostgreSQL Setup ---
 const db = new PgClient({
