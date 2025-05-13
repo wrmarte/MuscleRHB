@@ -117,6 +117,10 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const axios = require('axios');
+const path = require('path');
+
 if (command === '!announce') {
   autoDelete();
 
@@ -126,7 +130,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // --tag support
+  // --tag parsing
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -136,18 +140,16 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // --img support
+  // --img parsing
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Title | Description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
-  // Build embed
   const embed = new EmbedBuilder()
     .setColor(0xFF5733)
     .setTitle(`📣 ${title.trim()}`)
@@ -155,19 +157,35 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // ✅ Direct link only (no attachment)
-  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
-    embed.setImage(imageUrl);
-  } else if (imageUrl) {
-    return message.channel.send('⚠️ Invalid image URL. Must end in .jpg, .png, etc.');
+  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
+    try {
+      const cleanUrl = imageUrl.split('?')[0];
+      const ext = path.extname(cleanUrl) || '.jpg';
+      const fileName = `announcement${ext}`;
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data);
+      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+
+      embed.setImage(`attachment://${fileName}`);
+
+      return await message.channel.send({
+        content: mention ? `📣 **${mention}**` : '',
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (err) {
+      console.error('❌ Image fetch error:', err.message);
+      await message.channel.send('⚠️ Could not upload image, posting without it.');
+    }
   }
 
-  // Final send
+  // Fallback if no image or error
   await message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 
 
 
