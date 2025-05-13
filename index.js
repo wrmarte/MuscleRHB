@@ -126,7 +126,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Handle --tag
+  // --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -136,7 +136,7 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // Handle --img
+  // --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
@@ -153,36 +153,11 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // Try to attach image
+  // ✅ Use direct image URL (no download)
   if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-    try {
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
-      const fileName = `announce-image${ext}`;
-      const buffer = Buffer.from(response.data);
-      const attachment = new AttachmentBuilder(buffer, { name: fileName });
-
-      embed.setImage(`attachment://${fileName}`);
-
-      await message.channel.send({
-        content: mention ? `📣 **${mention}**` : '',
-        embeds: [embed],
-        files: [attachment]
-      });
-
-      return;
-    } catch (err) {
-      console.error('⚠️ Attachment image fetch failed, falling back to URL:', err.message);
-      // Fallback: try setting image directly
-      try {
-        embed.setImage(imageUrl); // some URLs allow hotlinking
-      } catch (e2) {
-        console.error('❌ Even fallback image URL failed:', e2.message);
-      }
-    }
+    embed.setImage(imageUrl);
   }
 
-  // Final fallback
   await message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
