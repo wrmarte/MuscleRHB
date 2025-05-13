@@ -223,7 +223,7 @@ if (command === '!announcew') {
   const description = rest.join('|').trim() || '*No details provided.*';
 
   const embed = new EmbedBuilder()
-    .setColor(0xFF5733)
+    .setColor(getRandomColor())
     .setTitle(`📢: ${title.trim()}`)
     .setDescription(`**${description}**`)
     .setFooter({ text: `Posted by ${message.author.username}` })
