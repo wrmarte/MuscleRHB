@@ -117,50 +117,50 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-  if (command === '!announce') {
-    autoDelete();
+if (command === '!announce') {
+  autoDelete();
 
-    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+  const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
+  if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
-    let mention = '';
-    let imageUrl = '';
+  let mention = '';
+  let imageUrl = '';
 
-    const tagIndex = args.indexOf('--tag');
-    if (tagIndex !== -1 && args[tagIndex + 1]) {
-      const roleName = args[tagIndex + 1];
-      const role = message.guild.roles.cache.find(r => r.name === roleName);
-      if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
-      mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
-      args.splice(tagIndex, 2);
-    }
-
-    const imgIndex = args.indexOf('--img');
-    if (imgIndex !== -1 && args[imgIndex + 1]) {
-      imageUrl = args[imgIndex + 1];
-      args.splice(imgIndex, 2);
-    }
-
-    const [title, ...rest] = args.join(' ').split('|');
-    const description = rest.join('|').trim() || '*No details provided.*';
-
-    const embed = new EmbedBuilder()
-      .setColor(0xFF5733)
-      .setTitle(`📣 ${title.trim()}`)
-      .setDescription(`**${description}**`)
-      .setFooter({ text: `Posted by ${message.author.username}` })
-      .setTimestamp();
-
-    if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-      embed.setImage(imageUrl);
-    }
-
-    return message.channel.send({
-      content: mention ? `📣 **${mention}**` : '',
-      embeds: [embed]
-    });
+  const tagIndex = args.indexOf('--tag');
+  if (tagIndex !== -1 && args[tagIndex + 1]) {
+    const roleName = args[tagIndex + 1];
+    const role = message.guild.roles.cache.find(r => r.name === roleName);
+    if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
+    mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+    args.splice(tagIndex, 2);
   }
-});
+
+  const imgIndex = args.indexOf('--img');
+  if (imgIndex !== -1 && args[imgIndex + 1]) {
+    imageUrl = args[imgIndex + 1];
+    args.splice(imgIndex, 2);
+  }
+
+  const [title, ...rest] = args.join(' ').split('|');
+  const description = rest.join('|').trim() || '*No details provided.*';
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFF5733)
+    .setTitle(`📣 ${title.trim()}`)
+    .setDescription(`**${description}**`)
+    .setFooter({ text: `Posted by ${message.author.username}` })
+    .setTimestamp();
+
+  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
+    embed.setImage(imageUrl);
+  }
+
+  return message.channel.send({
+    content: mention ? `📣 **${mention}**` : '',
+    embeds: [embed]
+  });
+}
+
 
   else if (command === '!announcew') {
     autoDelete();
