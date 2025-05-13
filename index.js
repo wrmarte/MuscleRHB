@@ -147,13 +147,12 @@ client.on('messageCreate', async message => {
 
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
-
   const autoDelete = () => message.delete().catch(() => {});
 
 if (command === '!announce') {
   console.log('!announce command triggered');
 
-  // autoDelete(); // Temporarily comment this out while testing
+  autoDelete(); // Temporarily comment this out while testing
 
   const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
   if (!hasRole) {
