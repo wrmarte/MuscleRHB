@@ -126,6 +126,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
+  // Handle --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -135,6 +136,7 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
+  // Handle --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
@@ -151,15 +153,35 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
+  // If valid image URL, download and attach it
   if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-    embed.setImage(imageUrl);
+    try {
+      const axiosRes = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const fileExt = path.extname(imageUrl.split('?')[0]) || '.jpg';
+      const fileName = `announcement-image${fileExt}`;
+      const buffer = Buffer.from(axiosRes.data, 'binary');
+      const attachment = new AttachmentBuilder(buffer, { name: fileName });
+
+      embed.setImage(`attachment://${fileName}`);
+
+      return message.channel.send({
+        content: mention ? `📣 **${mention}**` : '',
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (err) {
+      console.error('❌ Failed to fetch image:', err.message);
+      await message.channel.send('⚠️ Failed to fetch image. Posting without it.');
+    }
   }
 
+  // Fallback: no image
   return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 
 
   else if (command === '!announcew') {
