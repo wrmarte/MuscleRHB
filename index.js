@@ -149,14 +149,6 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-client.on('messageCreate', async message => {
-  if (message.author.bot) return;
-
-  const args = message.content.trim().split(/\s+/);
-  const command = args.shift().toLowerCase();
-
-  const autoDelete = () => message.delete().catch(() => {});
-
   if (command === '!announce') {
     autoDelete();
     const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
