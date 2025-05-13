@@ -121,7 +121,7 @@ const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const path = require('path');
 
-if (command === '!announce') {
+if (command === '!announcew') {
   autoDelete();
 
   const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
@@ -195,32 +195,78 @@ if (command === '!announce') {
 }
 
 
-  else if (command === '!announcew') {
-    autoDelete();
-    const imageUrl = 'https://i.imgur.com/OzZUnfT.jpg';
+ else if (command === '!announce') {
+  autoDelete();
 
+  const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
+  if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+
+  let mention = '';
+  let imageUrl = '';
+
+  const tagIndex = args.indexOf('--tag');
+  if (tagIndex !== -1 && args[tagIndex + 1]) {
+    const roleName = args[tagIndex + 1];
+    const role = message.guild.roles.cache.find(r => r.name === roleName);
+    if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
+    mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+    args.splice(tagIndex, 2);
+  }
+
+  const imgIndex = args.indexOf('--img');
+  if (imgIndex !== -1 && args[imgIndex + 1]) {
+    imageUrl = args[imgIndex + 1];
+    args.splice(imgIndex, 2);
+  }
+
+  const [title, ...rest] = args.join(' ').split('|');
+  const description = rest.join('|').trim() || '*No details provided.*';
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFF5733)
+    .setTitle(`📣 ${title.trim()}`)
+    .setDescription(`**${description}**`)
+    .setFooter({ text: `Posted by ${message.author.username}` })
+    .setTimestamp();
+
+  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const fileName = 'image.jpg';
-      const imageBuffer = Buffer.from(response.data);
-      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
 
-      const embed = new EmbedBuilder()
-        .setTitle('📢 Test Announcement')
-        .setDescription('Image should show below')
-        .setImage(`attachment://${fileName}`)
-        .setTimestamp();
+      const contentType = response.headers['content-type'] || '';
+      const extFromType = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+      }[contentType.split(';')[0]] || '.jpg';
+
+      const fileName = `image${extFromType}`;
+      const buffer = Buffer.from(response.data);
+      const attachment = new AttachmentBuilder(buffer, { name: fileName });
+
+      embed.setThumbnail(`attachment://${fileName}`);
 
       return message.channel.send({
-        content: `📣 **@everyone**`,
+        content: mention ? `📣 **${mention}**` : '',
         embeds: [embed],
         files: [attachment]
       });
     } catch (err) {
-      console.error('Failed to fetch image:', err.message);
-      return message.channel.send('⚠️ Could not fetch the image.');
+      console.error('❌ Image fetch error:', err.message);
+      return message.channel.send('⚠️ Could not fetch or attach image. Try a different URL.');
     }
   }
+
+  // No image fallback
+  return message.channel.send({
+    content: mention ? `📣 **${mention}**` : '',
+    embeds: [embed]
+  });
+}
 
   else if (command === '!linkwallet') {
     const address = args[0];
