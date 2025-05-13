@@ -231,6 +231,7 @@ client.on('messageCreate', async message => {
 
   // Test Welcome
 else if (command === '!testwelcome') {
+   autoDelete();
   const welcomeEmbed = new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(`💎 Welcome, ${message.member.user.username}! 💎`)
