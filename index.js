@@ -147,31 +147,54 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-  if (command === '!announce') {
-    autoDelete();
-    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+if (command === '!announce') {
+  autoDelete();
 
-    const tagIndex = args.indexOf('--tag');
-    let mention = '';
-    if (tagIndex !== -1 && args[tagIndex + 1]) {
-      const role = message.guild.roles.cache.find(r => r.name === args[tagIndex + 1]);
-      if (!role && args[tagIndex + 1] !== 'everyone') return message.channel.send('❌ Role not found.');
-      mention = args[tagIndex + 1] === 'everyone' ? '@everyone' : `<@&${role.id}>`;
-      args.splice(tagIndex, 2);
-    }
+  const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
+  if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
-    const [title, ...rest] = args.join(' ').split('|');
-    const embed = new EmbedBuilder()
-      .setColor(0xFF5733)
-      .setTitle(`📣 ${title.trim()}`)
-      .setDescription(rest.join('|').trim() || '*No details provided.*')
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Posted by ${message.author.username}` })
-      .setTimestamp();
+  let mention = '';
+  let imageUrl = '';
 
-    return message.channel.send({ content: mention, embeds: [embed] });
+  // Handle --tag <role>
+  const tagIndex = args.indexOf('--tag');
+  if (tagIndex !== -1 && args[tagIndex + 1]) {
+    const roleArg = args[tagIndex + 1];
+    const role = message.guild.roles.cache.find(r => r.name === roleArg);
+    if (!role && roleArg !== 'everyone') return message.channel.send('❌ Role not found.');
+    mention = roleArg === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+    args.splice(tagIndex, 2);
   }
+
+  // Handle --img <url>
+  const imgIndex = args.indexOf('--img');
+  if (imgIndex !== -1 && args[imgIndex + 1]) {
+    imageUrl = args[imgIndex + 1];
+    args.splice(imgIndex, 2);
+  }
+
+  // Title | Description parsing
+  const [title, ...rest] = args.join(' ').split('|');
+  const description = rest.join('|').trim() || '*No details provided.*';
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFF5733)
+    .setTitle(`📣 ${title.trim()}`)
+    .setDescription(`**${description}**`)
+    .setFooter({ text: `Posted by ${message.author.username}` })
+    .setTimestamp();
+
+  // Optional embed image
+  if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
+    embed.setImage(imageUrl);
+  }
+
+  return message.channel.send({
+    content: mention ? `📣 **${mention}**` : '',
+    embeds: [embed]
+  });
+}
+
 
   else if (command === '!announcew') {
     autoDelete();
