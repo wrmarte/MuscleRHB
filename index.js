@@ -149,10 +149,6 @@ client.on('messageCreate', async message => {
 const { AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
 const path = require('path');
-const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-const imageBuffer = Buffer.from(response.data); // ✅ remove 'utf-8'
-const fileName = `image${path.extname(imageUrl.split('?')[0])}`;
-const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });  
 
 if (command === '!announce') {
   autoDelete();
@@ -160,10 +156,11 @@ if (command === '!announce') {
   const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
   if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
-  const tagIndex = args.indexOf('--tag');
-  const imgIndex = args.indexOf('--img');
-
   let mention = '';
+  let imageUrl = '';
+
+  // Process --tag
+  const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const role = message.guild.roles.cache.find(r => r.name === args[tagIndex + 1]);
     if (!role && args[tagIndex + 1] !== 'everyone') return message.channel.send('❌ Role not found.');
@@ -171,12 +168,14 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  let imageUrl = '';
+  // Process --img
+  const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
+  // Extract title and body
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No additional details provided.*';
 
@@ -186,31 +185,34 @@ if (command === '!announce') {
     .setDescription(`**${description}**`)
     .setTimestamp();
 
+  // If valid image URL, attach it
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
     try {
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(response.data, 'utf-8');
+      const imageBuffer = Buffer.from(response.data);
       const fileName = `image${path.extname(imageUrl.split('?')[0])}`;
       const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
-return message.channel.send({
-  content: mention ? `📣 **${mention}**` : '',
-  embeds: [embed],
-  files: [attachment]
-});
+      return message.channel.send({
+        content: mention ? `📣 **${mention}**` : '',
+        embeds: [embed],
+        files: [attachment]
+      });
     } catch (err) {
       console.error('Image fetch failed:', err.message);
       return message.channel.send('⚠️ Failed to load image. Posting announcement without it.');
     }
   }
 
+  // Fallback: No image
   message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 
 
 
