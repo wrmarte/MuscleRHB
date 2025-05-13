@@ -147,8 +147,8 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-const axios = require('axios');
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const axios = require('axios');
 const path = require('path');
 
 if (command === '!announce') {
@@ -160,7 +160,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // --tag
+  // Handle --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -170,14 +170,14 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // --img
+  // Handle --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // title | description
+  // Title | Description parsing
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -188,30 +188,35 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // Handle image attachment
+  // Embed image if valid
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
-      const cleanUrl = imageUrl.split('?')[0]; // strip query params
+      const cleanUrl = imageUrl.split('?')[0];
       const ext = path.extname(cleanUrl) || '.jpg';
-      const fileName = `banner${ext}`;
+      const fileName = `announce-image${ext}`;
+
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const attachment = new AttachmentBuilder(Buffer.from(response.data), { name: fileName });
+      const buffer = Buffer.from(response.data);
+
+      const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
-      return message.channel.send({
+      await message.channel.send({
         content: mention ? `📣 **${mention}**` : '',
         embeds: [embed],
         files: [attachment]
       });
+
+      return;
     } catch (err) {
-      console.error('⚠️ Image fetch error:', err.message);
-      return message.channel.send('⚠️ Failed to fetch image. Posting without it.');
+      console.error('❌ Image fetch error:', err.message);
+      await message.channel.send('⚠️ Could not load the image, posting without it.');
     }
   }
 
-  // No image fallback
-  return message.channel.send({
+  // Fallback: no image
+  await message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
