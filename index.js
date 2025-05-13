@@ -130,7 +130,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // --tag parsing
+  // Parse --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -140,13 +140,14 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // --img parsing
+  // Parse --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
+  // Title | Description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -157,14 +158,19 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
+  // Try embedding image as an attachment
   if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
-      const cleanUrl = imageUrl.split('?')[0];
-      const ext = path.extname(cleanUrl) || '.jpg';
-      const fileName = `announcement${ext}`;
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(response.data);
-      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
+      const fileName = `announce${ext}`;
+
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: { 'User-Agent': 'DiscordBot (https://discord.com, 1.0)' }
+      });
+
+      const buffer = Buffer.from(response.data, 'binary');
+      const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
@@ -174,18 +180,17 @@ if (command === '!announce') {
         files: [attachment]
       });
     } catch (err) {
-      console.error('❌ Image fetch error:', err.message);
-      await message.channel.send('⚠️ Could not upload image, posting without it.');
+      console.error('❌ Image download failed:', err.message);
+      return message.channel.send('⚠️ Image upload failed. Try a different URL or remove --img.');
     }
   }
 
-  // Fallback if no image or error
+  // Send without image
   await message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
-
 
 
 
