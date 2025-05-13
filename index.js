@@ -168,7 +168,6 @@ client.on('messageCreate', async message => {
     case '!mypimp': { /* omitted for brevity */ break; }
 
     case '!somepimp': {
-      await message.delete().catch(() => {});
       try {
         const res = await fetch(`https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal`, {
           method: 'GET',
@@ -202,7 +201,6 @@ client.on('messageCreate', async message => {
     }
 
     case '!helpme': {
-      await message.delete().catch(() => {});
       const embed = new EmbedBuilder()
         .setColor(0x00FF7F)
         .setTitle('🛠 Bot Commands')
@@ -229,5 +227,6 @@ client.on('messageCreate', async message => {
 
 // ========== [ Bot Login ] ==========
 client.login(process.env.DISCORD_TOKEN);
+
 
 
