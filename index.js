@@ -7,10 +7,14 @@ const {
   ButtonBuilder,
   ActionRowBuilder,
   ButtonStyle,
-  Events
+  Events,
+  AttachmentBuilder
 } = require('discord.js');
 const fetch = require('node-fetch');
+const axios = require('axios');
+const path = require('path');
 const { Client: PgClient } = require('pg');
+
 
 // --- PostgreSQL Setup ---
 const db = new PgClient({
@@ -145,8 +149,6 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
 
   const autoDelete = () => message.delete().catch(() => {});
-
-const path = require('path');
 
 if (command === '!announce') {
   autoDelete();
