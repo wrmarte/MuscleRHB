@@ -72,18 +72,18 @@ client.on('guildMemberAdd', member => {
 
     const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
+      .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
       .setDescription(`
-**You made it to ${testMember.guild.name}, boss.** 😎  
+**You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${testMember.guild.memberCount}**.`)
-      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
+You’re crew member **#${member.guild.memberCount}**.`)
+      .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${member.guild.memberCount}` })
       .setTimestamp();
 
   const button = new ButtonBuilder()
@@ -91,7 +91,8 @@ You’re crew member **#${testMember.guild.memberCount}**.`)
     .setLabel('👋 Welcome')
     .setStyle(ButtonStyle.Success);
 
-  channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
+  channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
+
 });
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -229,30 +230,31 @@ client.on('messageCreate', async message => {
   }
 
   // Test Welcome
-  else if (command === '!testwelcome') {
-    const welcomeEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
-      .setDescription(`
-**You made it to ${testMember.guild.name}, boss.** 😎  
+else if (command === '!testwelcome') {
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor(getRandomColor())
+    .setTitle(`💎 Welcome, ${message.member.user.username}! 💎`)
+    .setDescription(`
+**You made it to ${message.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
 Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${testMember.guild.memberCount}**.`)
-      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
-      .setTimestamp();
+You’re crew member **#${message.guild.memberCount}**.`)
+    .setThumbnail(message.member.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: `Member #${message.guild.memberCount}` })
+    .setTimestamp();
 
-    const button = new ButtonBuilder()
-      .setCustomId(`welcome_${message.author.id}`)
-      .setLabel('👋 Welcome')
-      .setStyle(ButtonStyle.Success);
+  const button = new ButtonBuilder()
+    .setCustomId(`welcome_${message.author.id}`)
+    .setLabel('👋 Welcome')
+    .setStyle(ButtonStyle.Success);
 
-    message.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
-  }
+  message.channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
+}
+
 
   else if (command === '!testrole') {
     autoDelete();
