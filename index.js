@@ -146,6 +146,10 @@ client.on('messageCreate', async message => {
 
   const autoDelete = () => message.delete().catch(() => {});
 
+const { AttachmentBuilder } = require('discord.js');
+const axios = require('axios');
+const path = require('path');
+
 if (command === '!announce') {
   autoDelete();
 
@@ -173,22 +177,37 @@ if (command === '!announce') {
   const description = rest.join('|').trim() || '*No additional details provided.*';
 
   const embed = new EmbedBuilder()
-    .setColor(0xF1C40F) // Gold tone
+    .setColor(0xF1C40F)
     .setTitle(`📢 ${title.trim()}`)
     .setDescription(`**${description}**`)
     .setTimestamp();
 
-  // If image URL is valid, set it
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
-    embed.setImage(imageUrl);
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data, 'utf-8');
+      const fileName = `image${path.extname(imageUrl.split('?')[0])}`;
+      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+
+      embed.setImage(`attachment://${fileName}`);
+
+      return message.channel.send({
+        content: mention ? `📣 **${mention}**` : '',
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (err) {
+      console.error('Image fetch failed:', err.message);
+      return message.channel.send('⚠️ Failed to load image. Posting announcement without it.');
+    }
   }
 
-  // Send message
   message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 
 
 
