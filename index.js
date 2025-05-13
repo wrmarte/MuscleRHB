@@ -1,4 +1,3 @@
-// index.js
 require('dotenv').config();
 
 const {
@@ -77,14 +76,13 @@ client.on('guildMemberAdd', member => {
   const welcomeEmbed = new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
-    .setDescription(`
-**You made it to ${member.guild.name}, boss.** 😎  
+    .setDescription(`**You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
-Say hi. Make moves. Claim your throne. 💯  
+Say hi. Make moves. Claim your throne. 💫  
 You’re crew member **#${member.guild.memberCount}**.`)
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
     .setFooter({ text: `Member #${member.guild.memberCount}` })
@@ -107,37 +105,9 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!member) return interaction.reply({ content: '❌ Member not found.', ephemeral: true });
 
   interaction.reply({
-    content: `👑 ${interaction.user} welcomed ${member} to the crew! 💯`,
+    content: `👑 ${interaction.user} welcomed ${member} to the crew! 💫`,
     allowedMentions: { users: [interaction.user.id, memberId] }
   });
-});
-
-client.on('guildMemberUpdate', async (oldMember, newMember) => {
-  const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
-  if (!addedRoles.size) return;
-
-  const channel = newMember.guild.systemChannel;
-  if (!channel) return;
-
-  for (const role of addedRoles.values()) {
-    const welcomeEmbed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${newMember.user.username}! 💎`)
-      .setDescription(`
-**You made it to ${newMember.guild.name}, boss.** 😎  
-Keep it clean, flashy, and classy. 🍸
-
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})
-
-Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${newMember.guild.memberCount}**.`)
-      .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${newMember.guild.memberCount}` })
-      .setTimestamp();
-
-    channel.send({ embeds: [welcomeEmbed] });
-  }
 });
 
 client.on('messageCreate', async message => {
@@ -147,91 +117,50 @@ client.on('messageCreate', async message => {
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
 
-const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const axios = require('axios');
-const path = require('path');
+  if (command === '!announce') {
+    autoDelete();
 
-if (command === '!announce') {
-  autoDelete();
+    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
+    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
 
-  const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-  if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+    let mention = '';
+    let imageUrl = '';
 
-  let mention = '';
-  let imageUrl = '';
-
-  // Parse --tag
-  const tagIndex = args.indexOf('--tag');
-  if (tagIndex !== -1 && args[tagIndex + 1]) {
-    const roleName = args[tagIndex + 1];
-    const role = message.guild.roles.cache.find(r => r.name === roleName);
-    if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
-    mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
-    args.splice(tagIndex, 2);
-  }
-
-  // Parse --img
-  const imgIndex = args.indexOf('--img');
-  if (imgIndex !== -1 && args[imgIndex + 1]) {
-    imageUrl = args[imgIndex + 1];
-    args.splice(imgIndex, 2);
-  }
-
-  const [title, ...rest] = args.join(' ').split('|');
-  const description = rest.join('|').trim() || '*No details provided.*';
-
-  const embed = new EmbedBuilder()
-    .setColor(0xFF5733)
-    .setTitle(`📣 ${title.trim()}`)
-    .setDescription(`**${description}**`)
-    .setFooter({ text: `Posted by ${message.author.username}` })
-    .setTimestamp();
-
-  // ✅ Validate and attach image
-  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-    embed.setImage(imageUrl);
-  } else if (imageUrl) {
-    console.warn('⚠️ Invalid image URL:', imageUrl);
-    await message.channel.send('❌ That image URL is invalid. Must be a direct link to a JPG, PNG, etc.');
-  }
-
-  await message.channel.send({
-    content: mention ? `📣 **${mention}**` : '',
-    embeds: [embed]
-  });
-}
-
-
-  // Handle embedded image
-  if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-    try {
-      const cleanUrl = imageUrl.split('?')[0];
-      const ext = path.extname(cleanUrl) || '.jpg';
-      const fileName = `announce-image${ext}`;
-
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const buffer = Buffer.from(response.data, 'binary');
-      const attachment = new AttachmentBuilder(buffer, { name: fileName });
-
-      embed.setImage(`attachment://${fileName}`);
-
-      return message.channel.send({
-        content: mention ? `📣 **${mention}**` : '',
-        embeds: [embed],
-        files: [attachment]
-      });
-    } catch (err) {
-      console.error('❌ Image fetch error:', err.message);
-      return message.channel.send('⚠️ Could not load the image, posting without it.');
+    const tagIndex = args.indexOf('--tag');
+    if (tagIndex !== -1 && args[tagIndex + 1]) {
+      const roleName = args[tagIndex + 1];
+      const role = message.guild.roles.cache.find(r => r.name === roleName);
+      if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
+      mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+      args.splice(tagIndex, 2);
     }
-  }
 
-  // No image fallback
-  return message.channel.send({
-    content: mention ? `📣 **${mention}**` : '',
-    embeds: [embed]
-  });
-}
+    const imgIndex = args.indexOf('--img');
+    if (imgIndex !== -1 && args[imgIndex + 1]) {
+      imageUrl = args[imgIndex + 1];
+      args.splice(imgIndex, 2);
+    }
+
+    const [title, ...rest] = args.join(' ').split('|');
+    const description = rest.join('|').trim() || '*No details provided.*';
+
+    const embed = new EmbedBuilder()
+      .setColor(0xFF5733)
+      .setTitle(`📣 ${title.trim()}`)
+      .setDescription(`**${description}**`)
+      .setFooter({ text: `Posted by ${message.author.username}` })
+      .setTimestamp();
+
+    if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
+      embed.setImage(imageUrl);
+    }
+
+    return message.channel.send({
+      content: mention ? `📣 **${mention}**` : '',
+      embeds: [embed]
+    });
+  }
+});
 
   else if (command === '!announcew') {
     autoDelete();
