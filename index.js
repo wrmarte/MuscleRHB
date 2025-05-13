@@ -212,6 +212,36 @@ if (command === '!announce') {
     embeds: [embed]
   });
 }
+const axios = require('axios');
+const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const path = require('path');
+
+if (command === '!announce') {
+  let imageUrl = 'https://i.imgur.com/OzZUnfT.jpg'; // known working test image
+
+  try {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const fileName = 'image.jpg';
+    const imageBuffer = Buffer.from(response.data);
+    const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+
+    const embed = new EmbedBuilder()
+      .setTitle('📢 Test Announcement')
+      .setDescription('Image should show below')
+      .setImage(`attachment://${fileName}`)
+      .setTimestamp();
+
+    return message.channel.send({
+      content: `📣 **@everyone**`,
+      embeds: [embed],
+      files: [attachment]
+    });
+
+  } catch (err) {
+    console.error('Failed to fetch image:', err.message);
+    return message.channel.send('⚠️ Could not fetch the image.');
+  }
+}
 
 
 
