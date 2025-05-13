@@ -159,33 +159,35 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Process --tag
+  // Handle --tag <role>
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
-    const role = message.guild.roles.cache.find(r => r.name === args[tagIndex + 1]);
-    if (!role && args[tagIndex + 1] !== 'everyone') return message.channel.send('❌ Role not found.');
-    mention = args[tagIndex + 1] === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+    const roleArg = args[tagIndex + 1];
+    const role = message.guild.roles.cache.find(r => r.name === roleArg);
+    if (!role && roleArg !== 'everyone') return message.channel.send('❌ Role not found.');
+    mention = roleArg === 'everyone' ? '@everyone' : `<@&${role.id}>`;
     args.splice(tagIndex, 2);
   }
 
-  // Process --img
+  // Handle --img <url>
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Extract title and body
+  // Split into title and content
   const [title, ...rest] = args.join(' ').split('|');
-  const description = rest.join('|').trim() || '*No additional details provided.*';
+  const description = rest.join('|').trim() || '*No details provided.*';
 
+  // Build the embed
   const embed = new EmbedBuilder()
     .setColor(0xF1C40F)
     .setTitle(`📢 ${title.trim()}`)
     .setDescription(`**${description}**`)
     .setTimestamp();
 
-  // If valid image URL, attach it
+  // If image is valid, attach and embed it
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
     try {
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -201,21 +203,22 @@ if (command === '!announce') {
         files: [attachment]
       });
     } catch (err) {
-      console.error('Image fetch failed:', err.message);
+      console.error('⚠️ Image fetch failed:', err.message);
       return message.channel.send('⚠️ Failed to load image. Posting announcement without it.');
     }
   }
 
-  // Fallback: No image
+  // If no image, send plain embed
   message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 const axios = require('axios');
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 
-if (command === '!announce') {
+if (command === '!announces') {
   let imageUrl = 'https://i.imgur.com/OzZUnfT.jpg'; // known working test image
 
   try {
