@@ -1,4 +1,3 @@
-// index.js with combined NFT + Welcome + Announce + Test + Help commands
 require('dotenv').config();
 const {
   Client,
@@ -25,6 +24,7 @@ const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 const CONTRACT_ADDRESS = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
+const wallets = {}; // In-memory wallet store
 
 function getRandomColor() {
   const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
@@ -46,13 +46,13 @@ client.on('guildMemberAdd', member => {
   const welcomeEmbed = new EmbedBuilder()
     .setColor(getRandomColor())
     .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
-    .setDescription(`**You made it to ${member.guild.name}, boss.** 😎
+    .setDescription(`**You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
 
-Say hi. Make moves. Claim your throne. 💯
+Say hi. Make moves. Claim your throne. 💯  
 You’re crew member **#${member.guild.memberCount}**.`)
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
     .setFooter({ text: `Member #${member.guild.memberCount}` })
@@ -178,12 +178,79 @@ client.on('messageCreate', async message => {
     }
   }
 
+  else if (command === '!mypimp') {
+    const wallet = wallets[message.author.id];
+    if (!wallet) {
+      return message.channel.send('⚠️ You haven’t linked your wallet. Use `!linkwallet 0x...` first.');
+    }
+
+    try {
+      const res = await fetch(`https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal`, {
+        headers: {
+          accept: 'application/json',
+          'X-API-Key': process.env.MORALIS_API_KEY
+        }
+      });
+
+      const data = await res.json();
+      if (!data.result?.length) return message.channel.send('❌ You don’t own any NFTs in this collection.');
+
+      const nft = data.result[Math.floor(Math.random() * data.result.length)];
+      const meta = JSON.parse(nft.metadata || '{}');
+      let img = meta.image || 'https://via.placeholder.com/300x300';
+      if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
+
+      const traits = Array.isArray(meta.attributes)
+        ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
+        : '*No traits available.*';
+
+      const embed = new EmbedBuilder()
+        .setColor(getRandomColor())
+        .setTitle(`${meta.name || 'Your CryptoPimp'} #${nft.token_id}`)
+        .setDescription(`Here's one of your NFTs from the **CryptoPimps** collection.`)
+        .setImage(img)
+        .addFields({ name: '🧬 Traits', value: traits })
+        .setFooter({ text: `Token ID: ${nft.token_id}` })
+        .setTimestamp();
+
+      message.channel.send({ embeds: [embed] });
+    } catch (err) {
+      console.error('❌ Error fetching owned NFTs:', err);
+      message.channel.send('🚫 Could not fetch your pimp.');
+    }
+  }
+
+  else if (command === '!linkwallet') {
+    const address = args[0];
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return message.channel.send('❌ Invalid wallet address.');
+    }
+    wallets[message.author.id] = address;
+    message.channel.send(`✅ Wallet linked: \`${address}\``);
+  }
+
+  else if (command === '!mywallet') {
+    const wallet = wallets[message.author.id];
+    if (wallet) {
+      message.channel.send(`🪙 Your wallet: \`${wallet}\``);
+    } else {
+      message.channel.send('⚠️ You haven’t linked a wallet yet. Use `!linkwallet 0x...`');
+    }
+  }
+
   else if (command === '!testwelcome') {
     const testMember = { user: message.author, guild: message.guild };
     const embed = new EmbedBuilder()
       .setColor(getRandomColor())
       .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
-      .setDescription(`**You made it to ${testMember.guild.name}, boss.** 😎\nKeep it clean, flashy, and classy. 🍸\n\n🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})\n📊 [Pimp Levels](${HOLDER_LEVELS})\n\nSay hi. Make moves. Claim your throne. 💯\nYou’re crew member **#${testMember.guild.memberCount}**.`)
+      .setDescription(`**You made it to ${testMember.guild.name}, boss.** 😎  
+Keep it clean, flashy, and classy. 🍸
+
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
+
+Say hi. Make moves. Claim your throne. 💯  
+You’re crew member **#${testMember.guild.memberCount}**.`)
       .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `Member #${testMember.guild.memberCount}` })
       .setTimestamp();
@@ -215,6 +282,9 @@ client.on('messageCreate', async message => {
       .addFields(
         { name: '`!announce [title] | [optional content] [--tag everyone|RoleName]`', value: 'Post a rich announcement (requires Announcer role).' },
         { name: '`!somepimp`', value: 'Display a random CryptoPimp NFT with traits.' },
+        { name: '`!mypimp`', value: 'Show a random CryptoPimp NFT you own.' },
+        { name: '`!linkwallet 0x...`', value: 'Link your wallet address to your Discord ID.' },
+        { name: '`!mywallet`', value: 'View your linked wallet address.' },
         { name: '`!testwelcome`', value: 'Simulate the welcome message.' },
         { name: '`!testrole`', value: 'Simulate a role-added notification.' },
         { name: '`!helpme`', value: 'Show this help menu.' }
@@ -227,7 +297,3 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
-
-
-
