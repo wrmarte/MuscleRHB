@@ -146,8 +146,9 @@ client.on('messageCreate', async message => {
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
-const { AttachmentBuilder } = require('discord.js');
+
 const axios = require('axios');
+const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const path = require('path');
 
 if (command === '!announce') {
@@ -159,24 +160,24 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Handle --tag <role>
+  // --tag handling
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
-    const roleArg = args[tagIndex + 1];
-    const role = message.guild.roles.cache.find(r => r.name === roleArg);
-    if (!role && roleArg !== 'everyone') return message.channel.send('❌ Role not found.');
-    mention = roleArg === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+    const roleName = args[tagIndex + 1];
+    const role = message.guild.roles.cache.find(r => r.name === roleName);
+    if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
+    mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
     args.splice(tagIndex, 2);
   }
 
-  // Handle --img <url>
+  // --img handling
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Split title and description
+  // Embed content parsing
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -187,11 +188,13 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
+  // If valid image, fetch it and embed
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
     try {
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
+      const fileName = `image${ext}`;
       const imageBuffer = Buffer.from(response.data);
-      const fileName = `announce${path.extname(imageUrl.split('?')[0])}`;
       const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
@@ -202,12 +205,12 @@ if (command === '!announce') {
         files: [attachment]
       });
     } catch (err) {
-      console.error('Image fetch error:', err.message);
+      console.error('⚠️ Image fetch error:', err.message);
       return message.channel.send('⚠️ Failed to fetch image. Posting without it.');
     }
   }
 
-  // Fallback: no image
+  // Fallback without image
   return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
