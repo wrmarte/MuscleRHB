@@ -219,6 +219,7 @@ const axios = require('axios');
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 
 if (command === '!announces') {
+  autoDelete();
   let imageUrl = 'https://i.imgur.com/OzZUnfT.jpg'; // known working test image
 
   try {
