@@ -224,7 +224,7 @@ if (command === '!announcew') {
 
   const embed = new EmbedBuilder()
     .setColor(0xFF5733)
-    .setTitle(`:siren: ${title.trim()}`)
+    .setTitle(`📢: ${title.trim()}`)
     .setDescription(`**${description}**`)
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
