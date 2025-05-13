@@ -174,7 +174,7 @@ if (command === '!announce') {
       const buffer = Buffer.from(response.data);
       const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
-      embed.setImage(`attachment://${fileName}`);
+      embed.setThumbnail(`attachment://${fileName}`);
 
       return message.channel.send({
         content: mention ? `📣 **${mention}**` : '',
