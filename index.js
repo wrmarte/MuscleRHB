@@ -110,23 +110,23 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   if (!channel) return;
 
   for (const role of addedRoles.values()) {
-   const welcomeEmbed = new EmbedBuilder()
+    const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
+      .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
       .setDescription(`
-**You made it to ${testMember.guild.name}, boss.** 😎  
+**You made it to ${member.guild.name}, boss.** 😎  
 Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
 📊 [Pimp Levels](${HOLDER_LEVELS}) \n
 
 Say hi. Make moves. Claim your throne. 💯  
-You’re crew member **#${testMember.guild.memberCount}**.`)
-      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
+You’re crew member **#${member.guild.memberCount}**.`)
+      .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${member.guild.memberCount}` })
       .setTimestamp();
 
-    message.channel.send({ embeds: [welcomeEmbed] });
+    channel.send({ embeds: [welcomeEmbed] });
   }
 
 });
@@ -166,7 +166,6 @@ client.on('messageCreate', async message => {
   }
 
   else if (command === '!linkwallet') {
-    autoDelete();
     const address = args[0];
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return message.reply('❌ Invalid wallet address.');
     await linkWallet(message.author.id, address);
@@ -174,13 +173,11 @@ client.on('messageCreate', async message => {
   }
 
   else if (command === '!mywallet') {
-    autoDelete();
-    const wallet = await getWallet(message.author.id);
+   const wallet = await getWallet(message.author.id);
     message.reply(wallet ? `🪙 Your wallet: \`${wallet}\`` : '⚠️ No wallet linked.');
   }
 
   else if (['!somepimp', '!mypimp'].includes(command)) {
-    autoDelete();
     const wallet = command === '!mypimp' ? await getWallet(message.author.id) : null;
     if (command === '!mypimp' && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
@@ -227,22 +224,23 @@ client.on('messageCreate', async message => {
 
   else if (command === '!testwelcome') {
     autoDelete();
-    const embed = new EmbedBuilder()
+       const welcomeEmbed = new EmbedBuilder()
       .setColor(getRandomColor())
-      .setTitle(`💎 Welcome, ${message.author.username}! 💎`)
-      .setDescription(`**You made it to ${message.guild.name}, boss.** 😎  
-🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
-📊 [Pimp Levels](${HOLDER_LEVELS})`)
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .setFooter({ text: `Member #${message.guild.memberCount}` })
+      .setTitle(`💎 Welcome, ${testMember.user.username}! 💎`)
+      .setDescription(`
+**You made it to ${testMember.guild.name}, boss.** 😎  
+Keep it clean, flashy, and classy. 🍸
+
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  \n
+📊 [Pimp Levels](${HOLDER_LEVELS}) \n
+
+Say hi. Make moves. Claim your throne. 💯  
+You’re crew member **#${testMember.guild.memberCount}**.`)
+      .setThumbnail(testMember.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Member #${testMember.guild.memberCount}` })
       .setTimestamp();
 
-    const button = new ButtonBuilder()
-      .setCustomId(`welcome_${message.author.id}`)
-      .setLabel('👋 Welcome')
-      .setStyle(ButtonStyle.Success);
-
-    message.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
+    message.channel.send({ embeds: [welcomeEmbed] });
   }
 
   else if (command === '!testrole') {
