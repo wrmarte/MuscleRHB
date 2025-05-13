@@ -160,7 +160,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Parse --tag <role>
+  // Parse --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -170,29 +170,36 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // Parse --img <url>
+  // Parse --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Extract title and description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
-const embed = new EmbedBuilder()
-  .setColor(0xFF5733)
-  .setTitle(`📣 ${title.trim()}`)
-  .setDescription(`**${description}**`)
-  .setImage(imageUrl)  // ✅ Embed directly from URL
-  .setFooter({ text: `Posted by ${message.author.username}` })
-  .setTimestamp();
+  const embed = new EmbedBuilder()
+    .setColor(0xFF5733)
+    .setTitle(`📣 ${title.trim()}`)
+    .setDescription(`**${description}**`)
+    .setFooter({ text: `Posted by ${message.author.username}` })
+    .setTimestamp();
 
-await message.channel.send({
-  content: mention ? `📣 **${mention}**` : '',
-  embeds: [embed]
-});
+  // ✅ Validate and attach image
+  if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
+    embed.setImage(imageUrl);
+  } else if (imageUrl) {
+    console.warn('⚠️ Invalid image URL:', imageUrl);
+    await message.channel.send('❌ That image URL is invalid. Must be a direct link to a JPG, PNG, etc.');
+  }
+
+  await message.channel.send({
+    content: mention ? `📣 **${mention}**` : '',
+    embeds: [embed]
+  });
+}
 
 
   // Handle embedded image
