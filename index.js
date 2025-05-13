@@ -178,6 +178,7 @@ client.on('messageCreate', async message => {
     }
   }
 
+   // !mypimp - Random NFT from user's wallet
   else if (command === '!mypimp') {
     const wallet = wallets[message.author.id];
     if (!wallet) {
@@ -196,17 +197,17 @@ client.on('messageCreate', async message => {
       if (!data.result?.length) return message.channel.send('❌ You don’t own any NFTs in this collection.');
 
       const nft = data.result[Math.floor(Math.random() * data.result.length)];
-      const meta = JSON.parse(nft.metadata || '{}');
-      let img = meta.image || 'https://via.placeholder.com/300x300';
+      const metadata = JSON.parse(nft.metadata || '{}');
+      let img = metadata.image || 'https://via.placeholder.com/300x300';
       if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
 
-      const traits = Array.isArray(meta.attributes)
-        ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
+      const traits = Array.isArray(metadata.attributes)
+        ? metadata.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
         : '*No traits available.*';
 
       const embed = new EmbedBuilder()
         .setColor(getRandomColor())
-        .setTitle(`${meta.name || 'Your CryptoPimp'} #${nft.token_id}`)
+        .setTitle(`${metadata.name || 'Your CryptoPimp'} #${nft.token_id}`)
         .setDescription(`Here's one of your NFTs from the **CryptoPimps** collection.`)
         .setImage(img)
         .addFields({ name: '🧬 Traits', value: traits })
