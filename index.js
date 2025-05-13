@@ -160,7 +160,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // --tag handling
+  // --tag
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -170,14 +170,14 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // --img handling
+  // --img
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Embed content parsing
+  // title | description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -188,14 +188,14 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // If valid image, fetch it and embed
-  if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
+  // Handle image attachment
+  if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
+      const cleanUrl = imageUrl.split('?')[0]; // strip query params
+      const ext = path.extname(cleanUrl) || '.jpg';
+      const fileName = `banner${ext}`;
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const ext = path.extname(imageUrl.split('?')[0]) || '.jpg';
-      const fileName = `image${ext}`;
-      const imageBuffer = Buffer.from(response.data);
-      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+      const attachment = new AttachmentBuilder(Buffer.from(response.data), { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
@@ -210,7 +210,7 @@ if (command === '!announce') {
     }
   }
 
-  // Fallback without image
+  // No image fallback
   return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
