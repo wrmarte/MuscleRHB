@@ -147,7 +147,6 @@ client.on('messageCreate', async message => {
   const autoDelete = () => message.delete().catch(() => {});
 
 const { AttachmentBuilder } = require('discord.js');
-const axios = require('axios');
 const path = require('path');
 
 if (command === '!announce') {
