@@ -181,12 +181,19 @@ if (command === '!announce') {
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
-  const embed = new EmbedBuilder()
-    .setColor(0xFF5733)
-    .setTitle(`📣 ${title.trim()}`)
-    .setDescription(`**${description}**`)
-    .setFooter({ text: `Posted by ${message.author.username}` })
-    .setTimestamp();
+const embed = new EmbedBuilder()
+  .setColor(0xFF5733)
+  .setTitle(`📣 ${title.trim()}`)
+  .setDescription(`**${description}**`)
+  .setImage(imageUrl)  // ✅ Embed directly from URL
+  .setFooter({ text: `Posted by ${message.author.username}` })
+  .setTimestamp();
+
+await message.channel.send({
+  content: mention ? `📣 **${mention}**` : '',
+  embeds: [embed]
+});
+
 
   // Handle embedded image
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
