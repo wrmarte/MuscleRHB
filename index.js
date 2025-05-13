@@ -151,15 +151,19 @@ client.on('messageCreate', async message => {
   const autoDelete = () => message.delete().catch(() => {});
 
 if (command === '!announce') {
-  autoDelete();
+  console.log('!announce command triggered');
+
+  // autoDelete(); // Temporarily comment this out while testing
 
   const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-  if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+  if (!hasRole) {
+    console.log('User lacks announcer role');
+    return message.channel.send('🚫 Announcer role required.');
+  }
 
   let mention = '';
   let imageUrl = '';
 
-  // Handle --tag <role>
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleArg = args[tagIndex + 1];
@@ -169,25 +173,21 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // Handle --img <url>
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Split into title and content
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
-  // Build the embed
   const embed = new EmbedBuilder()
     .setColor(0xF1C40F)
     .setTitle(`📢 ${title.trim()}`)
     .setDescription(`**${description}**`)
     .setTimestamp();
 
-  // If image is valid, attach and embed it
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
     try {
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -208,12 +208,12 @@ if (command === '!announce') {
     }
   }
 
-  // If no image, send plain embed
   message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
+
 
 const axios = require('axios');
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
