@@ -146,6 +146,9 @@ client.on('messageCreate', async message => {
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
   const autoDelete = () => message.delete().catch(() => {});
+const { AttachmentBuilder } = require('discord.js');
+const axios = require('axios');
+const path = require('path');
 
 if (command === '!announce') {
   autoDelete();
@@ -173,7 +176,7 @@ if (command === '!announce') {
     args.splice(imgIndex, 2);
   }
 
-  // Title | Description parsing
+  // Split title and description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -184,17 +187,32 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // Optional embed image
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
-    embed.setImage(imageUrl);
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data);
+      const fileName = `announce${path.extname(imageUrl.split('?')[0])}`;
+      const attachment = new AttachmentBuilder(imageBuffer, { name: fileName });
+
+      embed.setImage(`attachment://${fileName}`);
+
+      return message.channel.send({
+        content: mention ? `📣 **${mention}**` : '',
+        embeds: [embed],
+        files: [attachment]
+      });
+    } catch (err) {
+      console.error('Image fetch error:', err.message);
+      return message.channel.send('⚠️ Failed to fetch image. Posting without it.');
+    }
   }
 
+  // Fallback: no image
   return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
 }
-
 
   else if (command === '!announcew') {
     autoDelete();
