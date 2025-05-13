@@ -160,7 +160,7 @@ if (command === '!announce') {
   let mention = '';
   let imageUrl = '';
 
-  // Handle --tag
+  // Parse --tag <role>
   const tagIndex = args.indexOf('--tag');
   if (tagIndex !== -1 && args[tagIndex + 1]) {
     const roleName = args[tagIndex + 1];
@@ -170,14 +170,14 @@ if (command === '!announce') {
     args.splice(tagIndex, 2);
   }
 
-  // Handle --img
+  // Parse --img <url>
   const imgIndex = args.indexOf('--img');
   if (imgIndex !== -1 && args[imgIndex + 1]) {
     imageUrl = args[imgIndex + 1];
     args.splice(imgIndex, 2);
   }
 
-  // Title | Description parsing
+  // Extract title and description
   const [title, ...rest] = args.join(' ').split('|');
   const description = rest.join('|').trim() || '*No details provided.*';
 
@@ -188,7 +188,7 @@ if (command === '!announce') {
     .setFooter({ text: `Posted by ${message.author.username}` })
     .setTimestamp();
 
-  // Embed image if valid
+  // Handle embedded image
   if (imageUrl && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
     try {
       const cleanUrl = imageUrl.split('?')[0];
@@ -196,27 +196,24 @@ if (command === '!announce') {
       const fileName = `announce-image${ext}`;
 
       const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const buffer = Buffer.from(response.data);
-
+      const buffer = Buffer.from(response.data, 'binary');
       const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
       embed.setImage(`attachment://${fileName}`);
 
-      await message.channel.send({
+      return message.channel.send({
         content: mention ? `📣 **${mention}**` : '',
         embeds: [embed],
         files: [attachment]
       });
-
-      return;
     } catch (err) {
       console.error('❌ Image fetch error:', err.message);
-      await message.channel.send('⚠️ Could not load the image, posting without it.');
+      return message.channel.send('⚠️ Could not load the image, posting without it.');
     }
   }
 
-  // Fallback: no image
-  await message.channel.send({
+  // No image fallback
+  return message.channel.send({
     content: mention ? `📣 **${mention}**` : '',
     embeds: [embed]
   });
