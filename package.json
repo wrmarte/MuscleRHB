@@ -1,18 +1,15 @@
 {
   "name": "my-discord-bot",
   "version": "1.0.0",
-  "description": "A bot for CryptoPimps",
+  "description": "A pimped out Discord bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "discord.js": "^14.13.0",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.6.7",
-    "pg": "^8.11.3"
-    "axios": "^1.6.8"  // ✅ Add this line
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3",
+    "axios": "^1.6.8"
   }
 }
-
-
