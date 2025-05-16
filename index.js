@@ -364,6 +364,47 @@ You’re crew member **#${message.guild.memberCount}**.`)
 
     message.channel.send({ embeds: [embed] });
   }
+// ... existing code above remains unchanged
+
+  else if (command === '!somepimps') {
+    try {
+      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=50`;
+      const res = await fetch(url, {
+        headers: {
+          accept: 'application/json',
+          'X-API-Key': process.env.MORALIS_API_KEY
+        }
+      });
+      const data = await res.json();
+      if (!data.result?.length) return message.channel.send('❌ No NFTs found.');
+
+      const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 4); // 4 to 6
+
+      const embeds = await Promise.all(sampled.map(async (nft) => {
+        const meta = JSON.parse(nft.metadata || '{}');
+        let img = meta.image || 'https://via.placeholder.com/300x300';
+        if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
+
+        const traits = Array.isArray(meta.attributes)
+          ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
+          : '*No traits available.*';
+
+        return new EmbedBuilder()
+          .setColor(getRandomColor())
+          .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
+          .setDescription(`🖼️ [View on OpenSea](https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id})`)
+          .setImage(img)
+          .addFields({ name: '🧬 Traits', value: traits })
+          .setFooter({ text: `Token ID: ${nft.token_id}` })
+          .setTimestamp();
+      }));
+
+      await message.channel.send({ content: '🎰 Random CryptoPimps:', embeds });
+    } catch (err) {
+      console.error('❌ NFT fetch error:', err);
+      message.channel.send('🚫 Failed to fetch NFTs.');
+    }
+  }
 
   else if (command === '!helpme') {
     autoDelete();
