@@ -357,8 +357,28 @@ client.on('messageCreate', async message => {
       console.error('❌ NFT fetch error:', err);
       message.channel.send('🚫 Failed to fetch or render NFTs.');
     }
+  } else if (command === '!helpme') {
+    const embed = new EmbedBuilder()
+      .setColor(0x00FF7F)
+      .setTitle('🛠 Bot Commands')
+      .addFields(
+        { name: '`!linkwallet <address>`', value: 'Link your wallet to your Discord account.' },
+        { name: '`!mywallet`', value: 'Check your linked wallet address.' },
+        { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
+        { name: '`!somepimp`', value: 'Show a random CryptoPimp from the entire collection.' },
+        { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' },
+        { name: '`!announce | msg --tag Role --img URL`', value: 'Send a styled announcement.' },
+        { name: '`!announcew | msg --tag Role --img URL`', value: 'Send a wide-style announcement with image.' },
+        { name: '`!testwelcome`', value: 'Simulate a welcome message.' },
+        { name: '`!testrole`', value: 'Simulate a role unlock.' }
+      )
+      .setFooter({ text: `Requested by ${message.author.username}` })
+      .setTimestamp();
+
+    message.channel.send({ embeds: [embed] });
   }
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
 
