@@ -370,7 +370,7 @@ You’re crew member **#${message.guild.memberCount}**.`)
 
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
-
+}
 
   else if (command === '!helpme') {
     autoDelete();
