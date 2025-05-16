@@ -368,48 +368,9 @@ You’re crew member **#${message.guild.memberCount}**.`)
 
 // ... existing code above remains unchanged
 
-  else if (command === '!somepimps') {
-    try {
-      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=50`;
-      const res = await fetch(url, {
-        headers: {
-          accept: 'application/json',
-          'X-API-Key': process.env.MORALIS_API_KEY
-        }
-      });
-      const data = await res.json();
-      if (!data.result?.length) return message.channel.send('❌ No NFTs found.');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
-      const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 4); // 4 to 6
 
-      const fields = sampled.map(nft => {
-        const meta = JSON.parse(nft.metadata || '{}');
-        let img = meta.image || 'https://via.placeholder.com/300x300';
-        if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
-        return `![#${nft.token_id}](${img})`;
-      });
-
-      const embed = new EmbedBuilder()
-        .setColor(getRandomColor())
-        .setTitle('🎰 Some Random CryptoPimps')
-        .setDescription('A few lucky Pimps freshly pulled from the blockchain. Click each to view on OpenSea.')
-        .setImage('https://via.placeholder.com/1x1.png') // Force grid to load
-        .setFooter({ text: `Total displayed: ${sampled.length}` })
-        .setTimestamp();
-
-      const attachments = sampled.map((nft, i) => {
-        const meta = JSON.parse(nft.metadata || '{}');
-        let img = meta.image || 'https://via.placeholder.com/300x300';
-        if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
-        return `[Pimp #${nft.token_id}](https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id})`;
-      }).join('\n');
-
-      await message.channel.send({ content: attachments, embeds: [embed] });
-    } catch (err) {
-      console.error('❌ NFT fetch error:', err);
-      message.channel.send('🚫 Failed to fetch NFTs.');
-    }
-  }
 
   else if (command === '!helpme') {
     autoDelete();
