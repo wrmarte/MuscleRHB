@@ -235,6 +235,64 @@ client.on('messageCreate', async message => {
       loadingMsg.edit('🚫 Failed to fetch or render NFTs.');
     }
   }
+// ... (existing index.js content remains unchanged)
+
+  else if (command === '!mypimps') {
+    const wallet = await getWalletCached(message.author.id);
+    if (!wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
+
+    const loadingMsg = await message.channel.send('🎨 Fetching your CryptoPimps...');
+
+    try {
+      const url = `https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=50`;
+      const res = await fetch(url, {
+        headers: {
+          accept: 'application/json',
+          'X-API-Key': process.env.MORALIS_API_KEY
+        }
+      });
+
+      const data = await res.json();
+      if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found in your wallet.');
+
+      const count = data.result.length < 6 ? data.result.length : (Math.random() < 0.5 ? 6 : 9);
+      const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, count);
+      const imageUrls = sampled.map(nft => {
+        const meta = JSON.parse(nft.metadata || '{}');
+        let img = meta.image || 'https://via.placeholder.com/150x150';
+        return img.startsWith('ipfs://') ? img.replace('ipfs://', 'https://ipfs.io/ipfs/') : img;
+      });
+
+      const canvasSize = 150;
+      const cols = 3;
+      const rows = Math.ceil(imageUrls.length / cols);
+      const canvas = createCanvas(canvasSize * cols, canvasSize * rows);
+      const ctx = canvas.getContext('2d');
+
+      const images = await Promise.all(imageUrls.map(url => loadImage(url)));
+      images.forEach((img, i) => {
+        const x = (i % cols) * canvasSize;
+        const y = Math.floor(i / cols) * canvasSize;
+        ctx.drawImage(img, x, y, canvasSize, canvasSize);
+      });
+
+      const buffer = canvas.toBuffer('image/png');
+      const attachment = new AttachmentBuilder(buffer, { name: 'mypimps-grid.png' });
+
+      const embed = new EmbedBuilder()
+        .setColor(getRandomColor())
+        .setTitle(`🧃 ${message.author.username}'s CryptoPimps (${imageUrls.length})`)
+        .setDescription(`Showing a random set from your wallet collection.`)
+        .setImage('attachment://mypimps-grid.png')
+        .setFooter({ text: `Linked wallet: ${wallet}` })
+        .setTimestamp();
+
+      await loadingMsg.edit({ content: '', embeds: [embed], files: [attachment] });
+    } catch (err) {
+      console.error('❌ NFT fetch error (mypimps):', err);
+      loadingMsg.edit('🚫 Failed to fetch or render your NFTs.');
+    }
+  }
 
   else if (command === '!announce' || command === '!announcew') {
     const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
