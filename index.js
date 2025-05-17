@@ -337,34 +337,47 @@ client.on('messageCreate', async message => {
     }
   }
   else if (command === '!announce' || command === '!announcew') {
-    const content = args.join(' ');
-    const imgMatch = content.match(/--img\s+(\S+)/);
-    const tagMatch = content.match(/--tag\s+(\S+)/);
+  const fullText = args.join(' ');
+  const imgMatch = fullText.match(/--img\s+(\S+)/);
+  const tagMatch = fullText.match(/--tag\s+(\S+)/);
 
-    const imageUrl = imgMatch ? imgMatch[1] : null;
-    const tagRole = tagMatch ? tagMatch[1] : null;
-    const cleanMsg = content
-      .replace(/--img\s+\S+/, '')
-      .replace(/--tag\s+\S+/, '')
-      .trim();
+  const imageUrl = imgMatch ? imgMatch[1] : null;
+  const tagRole = tagMatch ? tagMatch[1] : null;
+  const cleanMsg = fullText
+    .replace(/--img\s+\S+/, '')
+    .replace(/--tag\s+\S+/, '')
+    .trim();
 
-    const embed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setDescription(cleanMsg)
-      .setFooter({ text: `Announcement by ${message.author.username}` })
-      .setTimestamp();
+  const isWide = command === '!announcew';
 
-    if (imageUrl) embed.setImage(imageUrl);
-    const contentText = tagRole ? `<@&${tagRole}>` : null;
+  // 🔎 Smart Title Inference
+  const lowered = cleanMsg.toLowerCase();
+  let title = '📢 Announcement';
+  if (lowered.includes('win') || lowered.includes('winner')) title = '🏆 We Have a Winner!';
+  else if (lowered.includes('alert') || lowered.includes('warning')) title = '🚨 Alert!';
+  else if (lowered.includes('mint') || lowered.includes('drop')) title = '🔥 Mint or Drop Incoming!';
+  else if (lowered.includes('update') || lowered.includes('news')) title = '🗞️ Fresh Update!';
+  else if (lowered.includes('thank') || lowered.includes('grateful')) title = '🙏 Appreciation Post';
+  else if (lowered.includes('launch') || lowered.includes('live')) title = '🚀 Launch Notice';
 
-    await message.channel.send({
-      content: contentText,
-      embeds: [embed],
-      allowedMentions: { roles: tagRole ? [tagRole] : [] }
-    });
+  const embed = new EmbedBuilder()
+    .setColor(isWide ? 0xff1493 : getRandomColor())
+    .setTitle(title)
+    .setDescription(`**${cleanMsg}**`)
+    .setFooter({ text: `Posted by ${message.author.username}` })
+    .setTimestamp();
 
-    message.delete().catch(() => {});
-  }
+  if (imageUrl) embed.setImage(imageUrl);
+  const contentText = tagRole ? `<@&${tagRole}>` : null;
+
+  await message.channel.send({
+    content: contentText,
+    embeds: [embed],
+    allowedMentions: { roles: tagRole ? [tagRole] : [] }
+  });
+
+  message.delete().catch(() => {});
+}
 
   else if (command === '!testwelcome') {
     const welcomeEmbed = new EmbedBuilder()
