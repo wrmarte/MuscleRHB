@@ -210,56 +210,68 @@ client.on('messageCreate', async message => {
   }
 
   // ... PART 2 starts here with !mypimp, !somepimp, !mypimps, etc.
-  else if (['!somepimp', '!mypimp'].includes(command)) {
-    const isMyPimp = command === '!mypimp';
-    const wallet = isMyPimp ? await getWalletCached(message.author.id) : null;
-    if (isMyPimp && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
+ else if (['!somepimp', '!mypimp'].includes(command)) {
+  const isMyPimp = command === '!mypimp';
+  const wallet = isMyPimp ? await getWalletCached(message.author.id) : null;
+  if (isMyPimp && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
-    const url = isMyPimp
-      ? `https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`
-      : `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`;
+  const url = isMyPimp
+    ? `https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`
+    : `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`;
 
-    const loadingMsg = await message.channel.send('⏳ Fetching a fresh Pimp...');
+  const loadingMsg = await message.channel.send('⏳ Fetching a fresh Pimp...');
 
-    try {
-      const res = await fetch(url, {
-        headers: {
-          accept: 'application/json',
-          'X-API-Key': process.env.MORALIS_API_KEY
-        }
-      });
+  try {
+    const res = await fetch(url, {
+      headers: {
+        accept: 'application/json',
+        'X-API-Key': process.env.MORALIS_API_KEY
+      }
+    });
 
-      const data = await res.json();
-      if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found.');
+    const data = await res.json();
+    if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found.');
 
-      const nft = data.result[Math.floor(Math.random() * data.result.length)];
-      const meta = JSON.parse(nft.metadata || '{}');
-      let img = meta.image || 'https://via.placeholder.com/300x300';
-      if (img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    const nft = data.result[Math.floor(Math.random() * data.result.length)];
+    const meta = JSON.parse(nft.metadata || '{}');
 
-      const traits = Array.isArray(meta.attributes)
-        ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
-        : '*No traits available.*';
-
-      const rank = meta.rank ? ` | Rank: ${meta.rank}` : '';
-      const link = `https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id}`;
-      const display = isMyPimp ? await getWalletDisplay(wallet) : `🧊 Random street Pimp`;
-
-      const embed = new EmbedBuilder()
-        .setColor(getRandomColor())
-        .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
-        .setDescription(`🖼️ [View on OpenSea](${link})\n${display}`)
-        .setImage(img)
-        .addFields({ name: '🧬 Traits', value: traits })
-        .setFooter({ text: `Token ID: ${nft.token_id}${rank}` })
-        .setTimestamp();
-
-      await loadingMsg.edit({ content: '', embeds: [embed] });
-    } catch (err) {
-      console.error('❌ NFT fetch error:', err);
-      loadingMsg.edit('🚫 Failed to fetch NFT.');
+    // ✅ FIXED IMAGE LOGIC
+    let img = 'https://via.placeholder.com/300x300';
+    if (meta.image) {
+      img = meta.image.startsWith('ipfs://')
+        ? meta.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+        : meta.image;
+    } else if (meta.image_url) {
+      img = meta.image_url.startsWith('ipfs://')
+        ? meta.image_url.replace('ipfs://', 'https://ipfs.io/ipfs/')
+        : meta.image_url;
     }
+
+    const traits = Array.isArray(meta.attributes)
+      ? meta.attributes.map(t => `• **${t.trait_type}**: ${t.value}`).join('\n')
+      : '*No traits available.*';
+
+    const rank = meta.rank ? ` | Rank: ${meta.rank}` : '';
+    const link = `https://opensea.io/assets/base/${CONTRACT_ADDRESS}/${nft.token_id}`;
+    const display = isMyPimp
+      ? await getWalletDisplay(wallet)
+      : `🧊 Random street Pimp`;
+
+    const embed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
+      .setDescription(`🖼️ [View on OpenSea](${link})\n${display}`)
+      .setImage(img)
+      .addFields({ name: '🧬 Traits', value: traits })
+      .setFooter({ text: `Token ID: ${nft.token_id}${rank}` })
+      .setTimestamp();
+
+    await loadingMsg.edit({ content: '', embeds: [embed] });
+  } catch (err) {
+    console.error('❌ NFT fetch error:', err);
+    loadingMsg.edit('🚫 Failed to fetch NFT.');
   }
+}
 
   else if (command === '!somepimps' || command === '!mypimps') {
     const isMine = command === '!mypimps';
