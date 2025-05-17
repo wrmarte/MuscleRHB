@@ -173,31 +173,33 @@ else if (message.content === '!mywallet') {
     const result = await db.query('SELECT wallet_address FROM wallet_links WHERE user_id = $1', [userId]);
 
     if (result.rows.length === 0) {
-      await message.author.send("❌ You haven't linked a wallet yet. Use `!linkwallet YOUR_ADDRESS` to connect one.");
+      await message.reply({
+        content: `<@${userId}> ❌ You haven't linked a wallet yet. Use \`!linkwallet YOUR_ADDRESS\` to connect one.`,
+        allowedMentions: { users: [userId] }
+      });
     } else {
       const wallet = result.rows[0].wallet_address;
 
-      // Try resolving ENS name (optional, depends on provider)
-      let ensName = null;
-      try {
-        const { ethers } = require('ethers');
-        const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_1); // or whichever Base RPC
-        ensName = await provider.lookupAddress(wallet);
-      } catch (e) {
-        console.warn('ENS lookup failed:', e.message);
-      }
+      // Try ENS resolution
+      let ensName = await resolveENS(wallet);
+      if (!ensName) ensName = await forceENSName(wallet);
 
       const explorer = `https://basescan.org/address/${wallet}`;
-      const ensLine = ensName ? `🔤 ENS: \`${ensName}\`\n` : '';
+      const ensLine = ensName ? `🔤 **ENS:** \`${ensName}\`\n` : '';
 
-      await message.author.send(`🔗 Your linked wallet info:\n\`\`\`${wallet}\`\`\`\n${ensLine}🌍 [View on BaseScan](${explorer})`);
+      await message.reply({
+        content: `<@${userId}>\n🔗 **Wallet Linked:** \`${wallet}\`\n${ensLine}🌐 [View on BaseScan](${explorer})`,
+        allowedMentions: { users: [userId] }
+      });
     }
 
-    // Delete command from channel
     setTimeout(() => message.delete().catch(() => {}), 5000);
   } catch (err) {
-    console.error('!mywallet DB error:', err);
-    message.author.send('⚠️ There was an error fetching your wallet. Try again later.');
+    console.error('!mywallet error:', err);
+    await message.reply({
+      content: `<@${userId}> ⚠️ There was an error fetching your wallet. Try again later.`,
+      allowedMentions: { users: [userId] }
+    });
   }
 }
 
