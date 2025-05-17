@@ -17,6 +17,7 @@ const path = require('path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Client: PgClient } = require('pg');
 
+// --- PostgreSQL Setup ---
 const db = new PgClient({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -30,22 +31,26 @@ db.query(`
   )
 `);
 
-function getRandomColor() {
-  const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
-  return colors[Math.floor(Math.random() * colors.length)];
+const walletCache = new Map();
+async function getWalletCached(userId) {
+  if (walletCache.has(userId)) return walletCache.get(userId);
+  const res = await db.query('SELECT wallet_address FROM wallet_links WHERE user_id = $1', [userId]);
+  const wallet = res.rows[0]?.wallet_address || null;
+  if (wallet) walletCache.set(userId, wallet);
+  return wallet;
 }
-
 async function linkWallet(userId, address) {
   await db.query(`
     INSERT INTO wallet_links (user_id, wallet_address)
     VALUES ($1, $2)
     ON CONFLICT (user_id) DO UPDATE SET wallet_address = EXCLUDED.wallet_address
   `, [userId, address]);
+  walletCache.set(userId, address);
 }
 
-async function getWallet(userId) {
-  const res = await db.query(`SELECT wallet_address FROM wallet_links WHERE user_id = $1`, [userId]);
-  return res.rows[0]?.wallet_address || null;
+function getRandomColor() {
+  const colors = [0xFFD700, 0xFF69B4, 0x8A2BE2, 0x00CED1, 0xDC143C];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 
 const client = new Client({
@@ -78,7 +83,6 @@ client.on('guildMemberAdd', member => {
     .setColor(getRandomColor())
     .setTitle(`💎 Welcome, ${member.user.username}! 💎`)
     .setDescription(`**You made it to ${member.guild.name}, boss.** 😎  
-Keep it clean, flashy, and classy. 🍸
 
 🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
 📊 [Pimp Levels](${HOLDER_LEVELS})
@@ -116,163 +120,28 @@ client.on('messageCreate', async message => {
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
 
-  if (command === '!announcew') {
-    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
-
-    let mention = '';
-    let imageUrl = '';
-
-    const tagIndex = args.indexOf('--tag');
-    if (tagIndex !== -1 && args[tagIndex + 1]) {
-      const roleName = args[tagIndex + 1];
-      const role = message.guild.roles.cache.find(r => r.name === roleName);
-      if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
-      mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
-      args.splice(tagIndex, 2);
-    }
-
-    const imgIndex = args.indexOf('--img');
-    if (imgIndex !== -1 && args[imgIndex + 1]) {
-      imageUrl = args[imgIndex + 1];
-      args.splice(imgIndex, 2);
-    }
-
-    const [title, ...rest] = args.join(' ').split('|');
-    const description = rest.join('|').trim() || '*No details provided.*';
-
-    const embed = new EmbedBuilder()
-      .setColor(0xFF5733)
-      .setTitle(`📣 ${title.trim()}`)
-      .setDescription(`**${description}**`)
-      .setFooter({ text: `Posted by ${message.author.username}` })
-      .setTimestamp();
-
-    if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-      try {
-        const response = await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-
-        const extMap = {
-          'image/jpeg': '.jpg',
-          'image/png': '.png',
-          'image/gif': '.gif',
-          'image/webp': '.webp'
-        };
-
-        const contentType = response.headers['content-type'] || '';
-        const ext = extMap[contentType.split(';')[0]] || '.jpg';
-
-        const fileName = `image${ext}`;
-        const buffer = Buffer.from(response.data);
-        const attachment = new AttachmentBuilder(buffer, { name: fileName });
-
-        embed.setThumbnail(`attachment://${fileName}`);
-
-        return message.channel.send({
-          content: mention ? `📣 **${mention}**` : '',
-          embeds: [embed],
-          files: [attachment]
-        });
-      } catch (err) {
-        console.error('❌ Image fetch error:', err.message);
-        return message.channel.send('⚠️ Could not fetch or attach image.');
-      }
-    }
-
-    return message.channel.send({
-      content: mention ? `📣 **${mention}**` : '',
-      embeds: [embed]
-    });
-  } else if (command === '!announce') {
-    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
-    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
-
-    let mention = '';
-    let imageUrl = '';
-
-    const tagIndex = args.indexOf('--tag');
-    if (tagIndex !== -1 && args[tagIndex + 1]) {
-      const roleName = args[tagIndex + 1];
-      const role = message.guild.roles.cache.find(r => r.name === roleName);
-      if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
-      mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
-      args.splice(tagIndex, 2);
-    }
-
-    const imgIndex = args.indexOf('--img');
-    if (imgIndex !== -1 && args[imgIndex + 1]) {
-      imageUrl = args[imgIndex + 1];
-      args.splice(imgIndex, 2);
-    }
-
-    const [title, ...rest] = args.join(' ').split('|');
-    const description = rest.join('|').trim() || '*No details provided.*';
-
-    const embed = new EmbedBuilder()
-      .setColor(getRandomColor())
-      .setTitle(`📢 ${title.trim()}`)
-      .setDescription(`**${description}**`)
-      .setFooter({ text: `Posted by ${message.author.username}` })
-      .setTimestamp();
-
-    if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
-      try {
-        const response = await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-
-        const extMap = {
-          'image/jpeg': '.jpg',
-          'image/png': '.png',
-          'image/gif': '.gif',
-          'image/webp': '.webp'
-        };
-
-        const contentType = response.headers['content-type'] || '';
-        const ext = extMap[contentType.split(';')[0]] || '.jpg';
-
-        const fileName = `image${ext}`;
-        const buffer = Buffer.from(response.data);
-        const attachment = new AttachmentBuilder(buffer, { name: fileName });
-
-        embed.setThumbnail(`attachment://${fileName}`);
-
-        return message.channel.send({
-          content: mention ? `📣 **${mention}**` : '',
-          embeds: [embed],
-          files: [attachment]
-        });
-      } catch (err) {
-        console.error('❌ Image fetch error:', err.message);
-        return message.channel.send('⚠️ Could not fetch or attach image.');
-      }
-    }
-
-    return message.channel.send({
-      content: mention ? `📣 **${mention}**` : '',
-      embeds: [embed]
-    });
-  }
-
   if (command === '!linkwallet') {
     const address = args[0];
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return message.reply('❌ Invalid wallet address.');
     await linkWallet(message.author.id, address);
     message.reply(`✅ Wallet linked: \`${address}\``);
-  } else if (command === '!mywallet') {
-    const wallet = await getWallet(message.author.id);
-    message.reply(wallet ? `🪙 Your wallet: \`${wallet}\`` : '⚠️ No wallet linked.');
-  } else if (['!somepimp', '!mypimp'].includes(command)) {
-    const wallet = command === '!mypimp' ? await getWallet(message.author.id) : null;
-    if (command === '!mypimp' && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
+  }
 
-    const url = command === '!mypimp'
-      ? `https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal`
-      : `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal`;
+  else if (command === '!mywallet') {
+    const wallet = await getWalletCached(message.author.id);
+    message.reply(wallet ? `🪙 Your wallet: \`${wallet}\`` : '⚠️ No wallet linked.');
+  }
+
+  else if (['!somepimp', '!mypimp'].includes(command)) {
+    const isMyPimp = command === '!mypimp';
+    const wallet = isMyPimp ? await getWalletCached(message.author.id) : null;
+    if (isMyPimp && !wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
+
+    const url = isMyPimp
+      ? `https://deep-index.moralis.io/api/v2.2/${wallet}/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`
+      : `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`;
+
+    const loadingMsg = await message.channel.send('⏳ Fetching a fresh Pimp...');
 
     try {
       const res = await fetch(url, {
@@ -281,8 +150,9 @@ client.on('messageCreate', async message => {
           'X-API-Key': process.env.MORALIS_API_KEY
         }
       });
+
       const data = await res.json();
-      if (!data.result?.length) return message.channel.send('❌ No NFTs found.');
+      if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found.');
 
       const nft = data.result[Math.floor(Math.random() * data.result.length)];
       const meta = JSON.parse(nft.metadata || '{}');
@@ -299,48 +169,53 @@ client.on('messageCreate', async message => {
       const embed = new EmbedBuilder()
         .setColor(getRandomColor())
         .setTitle(`${meta.name || 'CryptoPimp'} #${nft.token_id}`)
-        .setDescription(`🖼️ [View this NFT on OpenSea](${link})\nHere's a ${command === '!mypimp' ? 'pimp from your wallet' : 'random pimp from the streets'}.`)
+        .setDescription(`🖼️ [View this NFT on OpenSea](${link})\nHere’s a ${isMyPimp ? 'pimp from your wallet' : 'random pimp from the streets'}.`)
         .setImage(img)
         .addFields({ name: '🧬 Traits', value: traits })
         .setFooter({ text: `Token ID: ${nft.token_id}${rank}` })
         .setTimestamp();
 
-      message.channel.send({ embeds: [embed] });
+      await loadingMsg.edit({ content: '', embeds: [embed] });
     } catch (err) {
       console.error('❌ NFT fetch error:', err);
-      message.channel.send('🚫 Failed to fetch NFT.');
+      loadingMsg.edit('🚫 Failed to fetch NFT.');
     }
-  } else if (command === '!somepimps') {
+  }
+
+  else if (command === '!somepimps') {
+    const loadingMsg = await message.channel.send('🎨 Building your custom CryptoPimps grid...');
+
     try {
-      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=50`;
+      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`;
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
           'X-API-Key': process.env.MORALIS_API_KEY
         }
       });
+
       const data = await res.json();
-      if (!data.result?.length) return message.channel.send('❌ No NFTs found.');
+      if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found.');
 
       const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 4);
       const imageUrls = sampled.map(nft => {
         const meta = JSON.parse(nft.metadata || '{}');
-        let img = meta.image || 'https://via.placeholder.com/300x300';
+        let img = meta.image || 'https://via.placeholder.com/150x150';
         return img.startsWith('ipfs://') ? img.replace('ipfs://', 'https://ipfs.io/ipfs/') : img;
       });
 
-      const canvasSize = 300;
+      const canvasSize = 150;
       const cols = 3;
       const rows = Math.ceil(imageUrls.length / cols);
       const canvas = createCanvas(canvasSize * cols, canvasSize * rows);
       const ctx = canvas.getContext('2d');
 
-      for (let i = 0; i < imageUrls.length; i++) {
-        const img = await loadImage(imageUrls[i]);
+      const images = await Promise.all(imageUrls.map(url => loadImage(url)));
+      images.forEach((img, i) => {
         const x = (i % cols) * canvasSize;
         const y = Math.floor(i / cols) * canvasSize;
         ctx.drawImage(img, x, y, canvasSize, canvasSize);
-      }
+      });
 
       const buffer = canvas.toBuffer('image/png');
       const attachment = new AttachmentBuilder(buffer, { name: 'pimps-grid.png' });
@@ -352,12 +227,14 @@ client.on('messageCreate', async message => {
         .setFooter({ text: `Total displayed: ${imageUrls.length}` })
         .setTimestamp();
 
-      await message.channel.send({ embeds: [embed], files: [attachment] });
+      await loadingMsg.edit({ content: '', embeds: [embed], files: [attachment] });
     } catch (err) {
-      console.error('❌ NFT fetch error:', err);
-      message.channel.send('🚫 Failed to fetch or render NFTs.');
+      console.error('❌ NFT grid error:', err);
+      loadingMsg.edit('🚫 Failed to fetch or render NFTs.');
     }
-  } else if (command === '!helpme') {
+  }
+
+  else if (command === '!helpme') {
     const embed = new EmbedBuilder()
       .setColor(0x00FF7F)
       .setTitle('🛠 Bot Commands')
@@ -366,11 +243,7 @@ client.on('messageCreate', async message => {
         { name: '`!mywallet`', value: 'Check your linked wallet address.' },
         { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
         { name: '`!somepimp`', value: 'Show a random CryptoPimp from the entire collection.' },
-        { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' },
-        { name: '`!announce | msg --tag Role --img URL`', value: 'Send a styled announcement.' },
-        { name: '`!announcew | msg --tag Role --img URL`', value: 'Send a wide-style announcement with image.' },
-        { name: '`!testwelcome`', value: 'Simulate a welcome message.' },
-        { name: '`!testrole`', value: 'Simulate a role unlock.' }
+        { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
