@@ -16,7 +16,26 @@ const axios = require('axios');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Client: PgClient } = require('pg');
 const { ethers } = require('ethers');
-const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+const ethRpcs = [
+  'https://rpc.ankr.com/eth',
+  'https://mainnet.infura.io/v3/YOUR_INFURA_KEY',
+  'https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY',
+  'https://cloudflare-eth.com'
+];
+
+async function resolveENS(address) {
+  for (const url of ethRpcs) {
+    try {
+      const provider = new ethers.JsonRpcProvider(url);
+      const name = await provider.lookupAddress(address);
+      if (name) return name;
+    } catch (err) {
+      console.warn(`RPC failed (${url}): ${err.message}`);
+      continue;
+    }
+  }
+  return null;
+}
 
 // --- PostgreSQL Setup ---
 const db = new PgClient({
@@ -239,7 +258,7 @@ client.on('messageCreate', async message => {
   }
 // ... (existing index.js content remains unchanged)
 
-   else if (command === '!mypimps') {
+  else if (command === '!mypimps') {
     const wallet = await getWalletCached(message.author.id);
     if (!wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
@@ -281,7 +300,7 @@ client.on('messageCreate', async message => {
       const buffer = canvas.toBuffer('image/png');
       const attachment = new AttachmentBuilder(buffer, { name: 'mypimps-grid.png' });
 
-      const ensName = await provider.lookupAddress(wallet).catch(() => null);
+      const ensName = await resolveENS(wallet);
       const shortWallet = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
       const footerText = ensName ? `${ensName} (${shortWallet})` : `Wallet: ${wallet}`;
 
