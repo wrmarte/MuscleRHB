@@ -298,6 +298,37 @@ client.on('messageCreate', async message => {
     return sendMsg(embed);
   }
 
+  else if (command === '!testwelcome') {
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`💎 Welcome, ${message.author.username}! 💎`)
+      .setDescription(`**You made it to the test zone.** 😎
+
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})`)
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Simulation` })
+      .setTimestamp();
+
+    const button = new ButtonBuilder()
+      .setCustomId(`welcome_${message.author.id}`)
+      .setLabel('👋 Welcome')
+      .setStyle(ButtonStyle.Success);
+
+    message.channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
+  }
+
+  else if (command === '!testrole') {
+    const embed = new EmbedBuilder()
+      .setColor(0x00FF7F)
+      .setTitle('🔓 Role Unlock Simulation')
+      .setDescription(`You’ve reached a new level of pimpness, ${message.author}.\nYour holder role has been upgraded 💎`)
+      .setFooter({ text: `Simulation` })
+      .setTimestamp();
+
+    message.channel.send({ embeds: [embed] });
+  }
+
   else if (command === '!helpme') {
     const embed = new EmbedBuilder()
       .setColor(0x00FF7F)
@@ -309,7 +340,9 @@ client.on('messageCreate', async message => {
         { name: '`!somepimp`', value: 'Show a random CryptoPimp from the entire collection.' },
         { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' },
         { name: '`!announce | msg --tag Role --img URL`', value: 'Send a styled announcement.' },
-        { name: '`!announcew | msg --tag Role --img URL`', value: 'Send a wide-style announcement with image.' }
+        { name: '`!announcew | msg --tag Role --img URL`', value: 'Send a wide-style announcement with image.' },
+        { name: '`!testwelcome`', value: 'Simulate a welcome message.' },
+        { name: '`!testrole`', value: 'Simulate a role unlock.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -319,3 +352,4 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
