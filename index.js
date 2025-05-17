@@ -155,19 +155,20 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
   if (!addedRoles.size) return;
 
-  const channel = newMember.guild.systemChannel;
-  if (!channel) return;
+  const channel = newMember.guild.channels.cache.get(ROLE_ANNOUNCE_CHANNEL_ID);
+  if (!channel || !channel.isTextBased()) return;
 
   const embed = new EmbedBuilder()
-    .setColor(0x00FF00)
-    .setTitle('🔓 Role Unlocked!')
-    .setDescription(`👑 <@${newMember.id}> just unlocked the **${[...addedRoles.values()].map(r => r.name).join(', ')}** role!`)
+    .setColor(0xFFD700)
+    .setTitle('🎉 Role Unlocked!')
+    .setDescription(`💼 <@${newMember.id}> just unlocked: **${[...addedRoles.values()].map(r => r.name).join(', ')}**`)
     .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-    .setTimestamp()
-    .setFooter({ text: `${newMember.user.username} leveled up` });
+    .setFooter({ text: `${newMember.user.username} leveling up in the streets.` })
+    .setTimestamp();
 
   channel.send({ embeds: [embed] });
 });
+
 
 
 client.on(Events.InteractionCreate, async interaction => {
