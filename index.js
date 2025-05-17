@@ -336,6 +336,73 @@ client.on('messageCreate', async message => {
       loadingMsg.edit('🚫 Failed to fetch or render NFTs.');
     }
   }
+  else if (command === '!announce' || command === '!announcew') {
+    const content = args.join(' ');
+    const imgMatch = content.match(/--img\s+(\S+)/);
+    const tagMatch = content.match(/--tag\s+(\S+)/);
+
+    const imageUrl = imgMatch ? imgMatch[1] : null;
+    const tagRole = tagMatch ? tagMatch[1] : null;
+    const cleanMsg = content
+      .replace(/--img\s+\S+/, '')
+      .replace(/--tag\s+\S+/, '')
+      .trim();
+
+    const embed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setDescription(cleanMsg)
+      .setFooter({ text: `Announcement by ${message.author.username}` })
+      .setTimestamp();
+
+    if (imageUrl) embed.setImage(imageUrl);
+    const contentText = tagRole ? `<@&${tagRole}>` : null;
+
+    await message.channel.send({
+      content: contentText,
+      embeds: [embed],
+      allowedMentions: { roles: tagRole ? [tagRole] : [] }
+    });
+
+    message.delete().catch(() => {});
+  }
+
+  else if (command === '!testwelcome') {
+    const welcomeEmbed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(`💎 Welcome, ${message.author.username}! 💎`)
+      .setDescription(`**You made it to the server, boss.** 😎  
+
+🔑 [Verify your role](${HOLDER_VERIFICATION_LINK})  
+📊 [Pimp Levels](${HOLDER_LEVELS})
+
+Say hi. Make moves. Claim your throne. 💫`)
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setTimestamp();
+
+    const button = new ButtonBuilder()
+      .setCustomId(`welcome_${message.author.id}`)
+      .setLabel('👋 Welcome')
+      .setStyle(ButtonStyle.Success);
+
+    await message.channel.send({
+      embeds: [welcomeEmbed],
+      components: [new ActionRowBuilder().addComponents(button)]
+    });
+
+    message.delete().catch(() => {});
+  }
+
+  else if (command === '!testrole') {
+    const embed = new EmbedBuilder()
+      .setColor(0x7289da)
+      .setTitle('🔓 Role Unlocked!')
+      .setDescription(`Congrats, ${message.author}! You’ve unlocked an exclusive role. Keep hustling.`)
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .setTimestamp();
+
+    await message.channel.send({ embeds: [embed] });
+    message.delete().catch(() => {});
+  }
 
   // Other commands: help, test, announcements...
   else if (command === '!helpme') {
