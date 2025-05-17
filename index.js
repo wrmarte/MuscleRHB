@@ -15,6 +15,8 @@ const fetch = require('node-fetch');
 const axios = require('axios');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Client: PgClient } = require('pg');
+const { ethers } = require('ethers');
+const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
 
 // --- PostgreSQL Setup ---
 const db = new PgClient({
@@ -237,7 +239,7 @@ client.on('messageCreate', async message => {
   }
 // ... (existing index.js content remains unchanged)
 
-  else if (command === '!mypimps') {
+   else if (command === '!mypimps') {
     const wallet = await getWalletCached(message.author.id);
     if (!wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
@@ -279,12 +281,16 @@ client.on('messageCreate', async message => {
       const buffer = canvas.toBuffer('image/png');
       const attachment = new AttachmentBuilder(buffer, { name: 'mypimps-grid.png' });
 
+      const ensName = await provider.lookupAddress(wallet).catch(() => null);
+      const shortWallet = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+      const footerText = ensName ? `${ensName} (${shortWallet})` : `Wallet: ${wallet}`;
+
       const embed = new EmbedBuilder()
         .setColor(getRandomColor())
         .setTitle(`🧃 ${message.author.username}'s CryptoPimps (${imageUrls.length})`)
         .setDescription(`Showing a random set from your wallet collection.`)
         .setImage('attachment://mypimps-grid.png')
-        .setFooter({ text: `Linked wallet: ${wallet}` })
+        .setFooter({ text: footerText })
         .setTimestamp();
 
       await loadingMsg.edit({ content: '', embeds: [embed], files: [attachment] });
