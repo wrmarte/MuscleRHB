@@ -13,7 +13,6 @@ const {
 } = require('discord.js');
 const fetch = require('node-fetch');
 const axios = require('axios');
-const path = require('path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Client: PgClient } = require('pg');
 
@@ -234,6 +233,71 @@ client.on('messageCreate', async message => {
     }
   }
 
+  else if (command === '!announce' || command === '!announcew') {
+    const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
+    if (!hasRole) return message.channel.send('🚫 Announcer role required.');
+
+    let mention = '';
+    let imageUrl = '';
+    const tagIndex = args.indexOf('--tag');
+    if (tagIndex !== -1 && args[tagIndex + 1]) {
+      const roleName = args[tagIndex + 1];
+      const role = message.guild.roles.cache.find(r => r.name === roleName);
+      if (!role && roleName !== 'everyone') return message.channel.send('❌ Role not found.');
+      mention = roleName === 'everyone' ? '@everyone' : `<@&${role.id}>`;
+      args.splice(tagIndex, 2);
+    }
+
+    const imgIndex = args.indexOf('--img');
+    if (imgIndex !== -1 && args[imgIndex + 1]) {
+      imageUrl = args[imgIndex + 1];
+      args.splice(imgIndex, 2);
+    }
+
+    const [title, ...rest] = args.join(' ').split('|');
+    const description = rest.join('|').trim() || '*No details provided.*';
+
+    const embed = new EmbedBuilder()
+      .setColor(getRandomColor())
+      .setTitle(command === '!announcew' ? `📣 ${title.trim()}` : `📢 ${title.trim()}`)
+      .setDescription(`**${description}**`)
+      .setFooter({ text: `Posted by ${message.author.username}` })
+      .setTimestamp();
+
+    const sendMsg = async (embed, attachment = null) => {
+      const payload = { content: mention ? `📣 ${mention}` : '', embeds: [embed] };
+      if (attachment) payload.files = [attachment];
+      return message.channel.send(payload);
+    };
+
+    if (imageUrl && /^https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(imageUrl)) {
+      try {
+        const response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const extMap = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/gif': '.gif',
+          'image/webp': '.webp'
+        };
+        const contentType = response.headers['content-type'] || '';
+        const ext = extMap[contentType.split(';')[0]] || '.jpg';
+        const fileName = `image${ext}`;
+        const buffer = Buffer.from(response.data);
+        const attachment = new AttachmentBuilder(buffer, { name: fileName });
+        embed.setThumbnail(`attachment://${fileName}`);
+        return sendMsg(embed, attachment);
+      } catch (err) {
+        console.error('❌ Image fetch error:', err.message);
+        return message.channel.send('⚠️ Could not fetch or attach image.');
+      }
+    }
+
+    return sendMsg(embed);
+  }
+
   else if (command === '!helpme') {
     const embed = new EmbedBuilder()
       .setColor(0x00FF7F)
@@ -243,7 +307,9 @@ client.on('messageCreate', async message => {
         { name: '`!mywallet`', value: 'Check your linked wallet address.' },
         { name: '`!mypimp`', value: 'Show a random NFT you own from CryptoPimps.' },
         { name: '`!somepimp`', value: 'Show a random CryptoPimp from the entire collection.' },
-        { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' }
+        { name: '`!somepimps`', value: 'Display a grid of 4–6 random CryptoPimps.' },
+        { name: '`!announce | msg --tag Role --img URL`', value: 'Send a styled announcement.' },
+        { name: '`!announcew | msg --tag Role --img URL`', value: 'Send a wide-style announcement with image.' }
       )
       .setFooter({ text: `Requested by ${message.author.username}` })
       .setTimestamp();
@@ -253,5 +319,3 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
-
-
