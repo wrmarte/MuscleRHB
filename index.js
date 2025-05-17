@@ -16,6 +16,7 @@ const axios = require('axios');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Client: PgClient } = require('pg');
 const { ethers } = require('ethers');
+const { request, gql } = require('graphql-request');
 const ethRpcs = [
   'https://rpc.ankr.com/eth',
   'https://mainnet.infura.io/v3/YOUR_INFURA_KEY',
@@ -35,6 +36,24 @@ async function resolveENS(address) {
     }
   }
   return null;
+}
+
+async function forceENSName(wallet) {
+  const endpoint = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens';
+  const query = gql`
+    query($owner: String!) {
+      domains(first: 1, where: { owner: $owner }, orderBy: createdAt, orderDirection: desc) {
+        name
+      }
+    }
+  `;
+  try {
+    const data = await request(endpoint, query, { owner: wallet.toLowerCase() });
+    return data.domains[0]?.name || null;
+  } catch (err) {
+    console.warn(`ENS graph query failed: ${err.message}`);
+    return null;
+  }
 }
 
 // --- PostgreSQL Setup ---
@@ -258,7 +277,7 @@ client.on('messageCreate', async message => {
   }
 // ... (existing index.js content remains unchanged)
 
-  else if (command === '!mypimps') {
+   else if (command === '!mypimps') {
     const wallet = await getWalletCached(message.author.id);
     if (!wallet) return message.reply('⚠️ No wallet linked. Use `!linkwallet 0x...`');
 
@@ -300,7 +319,7 @@ client.on('messageCreate', async message => {
       const buffer = canvas.toBuffer('image/png');
       const attachment = new AttachmentBuilder(buffer, { name: 'mypimps-grid.png' });
 
-      const ensName = await resolveENS(wallet);
+      const ensName = await resolveENS(wallet) || await forceENSName(wallet);
       const shortWallet = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
       const footerText = ensName ? `${ensName} (${shortWallet})` : `Wallet: ${wallet}`;
 
@@ -318,6 +337,7 @@ client.on('messageCreate', async message => {
       loadingMsg.edit('🚫 Failed to fetch or render your NFTs.');
     }
   }
+
 
   else if (command === '!announce' || command === '!announcew') {
     const hasRole = message.member.roles.cache.some(r => r.name === ANNOUNCER_ROLE_NAME);
