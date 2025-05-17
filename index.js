@@ -117,7 +117,7 @@ const ANNOUNCER_ROLE_NAME = 'ann';
 const HOLDER_VERIFICATION_LINK = 'https://discord.com/channels/1316581666642464858/1322600796960981096';
 const HOLDER_LEVELS = 'https://discord.com/channels/1316581666642464858/1347772808427606120';
 const CONTRACT_ADDRESS = '0xc38e2ae060440c9269cceb8c0ea8019a66ce8927';
-const ROLE_ANNOUNCE_CHANNEL_ID = '1322616358944637031'; // 👈 replace with your actual channel ID
+const ROLE_ANNOUNCE_CHANNEL_ID = '1316581668173119511'; // 👈 replace with your actual channel ID
 
 
 client.once('ready', () => {
@@ -154,14 +154,13 @@ You’re crew member **#${member.guild.memberCount}**.`)
   channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
 });
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  console.log(`🔁 guildMemberUpdate triggered for ${newMember.user.tag}`);
+
   const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
   if (!addedRoles.size) return;
 
   const channel = newMember.guild.channels.cache.get(ROLE_ANNOUNCE_CHANNEL_ID);
-  if (!channel || !channel.isTextBased()) {
-    console.warn(`⚠️ Role update channel not found or invalid.`);
-    return;
-  }
+  if (!channel || !channel.isTextBased()) return;
 
   const embed = new EmbedBuilder()
     .setColor(0xFFD700)
@@ -173,9 +172,6 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
   channel.send({ embeds: [embed] });
 });
-
-
-
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
