@@ -181,11 +181,13 @@ client.on('messageCreate', async message => {
     }
   }
 
+ // ... (rest of index.js remains unchanged)
+
   else if (command === '!somepimps') {
     const loadingMsg = await message.channel.send('🎨 Building your custom CryptoPimps grid...');
 
     try {
-      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=10`;
+      const url = `https://deep-index.moralis.io/api/v2.2/nft/${CONTRACT_ADDRESS}?chain=base&format=decimal&limit=20`;
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
@@ -196,7 +198,8 @@ client.on('messageCreate', async message => {
       const data = await res.json();
       if (!data.result?.length) return loadingMsg.edit('❌ No NFTs found.');
 
-      const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 4);
+      const count = Math.random() < 0.5 ? 6 : 9;
+      const sampled = data.result.sort(() => 0.5 - Math.random()).slice(0, count);
       const imageUrls = sampled.map(nft => {
         const meta = JSON.parse(nft.metadata || '{}');
         let img = meta.image || 'https://via.placeholder.com/150x150';
