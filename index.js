@@ -151,6 +151,24 @@ You’re crew member **#${member.guild.memberCount}**.`)
 
   channel.send({ embeds: [welcomeEmbed], components: [new ActionRowBuilder().addComponents(button)] });
 });
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+  if (!addedRoles.size) return;
+
+  const channel = newMember.guild.systemChannel;
+  if (!channel) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0x00FF00)
+    .setTitle('🔓 Role Unlocked!')
+    .setDescription(`👑 <@${newMember.id}> just unlocked the **${[...addedRoles.values()].map(r => r.name).join(', ')}** role!`)
+    .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+    .setTimestamp()
+    .setFooter({ text: `${newMember.user.username} leveled up` });
+
+  channel.send({ embeds: [embed] });
+});
+
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
